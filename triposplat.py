@@ -257,6 +257,7 @@ def _build_gaussians(decoder: ElasticGaussianFixedlenDecoder, points_pred: dict,
             scaling_bias=decoder.rep_config['scaling_bias'],
             opacity_bias=decoder.rep_config['opacity_bias'],
             scaling_activation=decoder.rep_config['scaling_activation'],
+            device=x['points'].device,
         )
         _x = x["points"][i, :, None, :]
         for k, v in decoder.layout.items():
