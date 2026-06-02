@@ -60,22 +60,16 @@ def _viewer_iframe(ply_path: Path) -> str:
 # Event handlers
 # ----------------------------------------------------------------------------
 
-def on_image_change(image):
-    """Run preprocessing as soon as the input changes — gives the user instant
-    feedback on the matte/crop without waiting for the full generation."""
-    if image is None:
-        return None
-    return PIPE.preprocess_image(image)
-
-
-def generate(prepared, seed: int, steps: int, guidance_scale: float,
+def generate(image, seed: int, steps: int, guidance_scale: float,
              num_gaussians: int, output_format: str,
              progress=gr.Progress(track_tqdm=True)):
-    if prepared is None:
-        raise gr.Error("Please upload an image and wait for preprocessing to finish.")
+    """Run the full pipeline (preprocess + encode + sample + decode)."""
+    if image is None:
+        raise gr.Error("Please upload an image first.")
 
     progress(0, desc="Generating...")
     t0 = time.time()
+    prepared = PIPE.preprocess_image(image)
     gen = torch.Generator(device=PIPE._device).manual_seed(int(seed))
     cond = PIPE.encode_image(prepared, generator=gen)
     out  = PIPE.sample_latent(cond, steps=int(steps),
@@ -100,7 +94,7 @@ def generate(prepared, seed: int, steps: int, guidance_scale: float,
 
     info = (f"{gaussian.get_xyz.shape[0]:,} gaussians  ·  "
             f"generation: {gen_dt:.1f}s  ·  saved: {download_path.name}")
-    return _viewer_iframe(ply_path), gr.update(value=str(download_path), interactive=True), info
+    return prepared, _viewer_iframe(ply_path), gr.update(value=str(download_path), interactive=True), info
 
 
 # ----------------------------------------------------------------------------
@@ -115,20 +109,18 @@ with gr.Blocks(title="TripoSplat") as demo:
         "[Read Paper](https://arxiv.org/abs/2605.16355) | [Research Blog](https://www.tripo3d.ai/research/triposplat)"
     )
 
-    image_in = gr.Image(label="Input image", type="pil", image_mode="RGBA",
-                        height=320, render=False)
-
-    gr.Examples(
-        examples=[[p] for p in EXAMPLES],
-        inputs=[image_in],
-        label="Examples (click to load)",
-        examples_per_page=10,
-        cache_examples=False,
-    )
-
     with gr.Row():
         with gr.Column(scale=1):
-            image_in.render()
+            image_in = gr.Image(label="Input image", type="pil", image_mode="RGBA",
+                                height=320)
+
+            gr.Examples(
+                examples=[[p] for p in EXAMPLES],
+                inputs=[image_in],
+                label="Examples (click to load)",
+                examples_per_page=10,
+                cache_examples=False,
+            )
 
             with gr.Accordion("Sampling settings", open=False):
                 seed_in = gr.Number(label="Seed", value=42, precision=0)
@@ -149,16 +141,10 @@ with gr.Blocks(title="TripoSplat") as demo:
             viewer_out = gr.HTML(value=PLACEHOLDER_HTML, label="Spark.js viewer")
             file_out = gr.DownloadButton(label="Download", value=None, interactive=False)
 
-    image_in.change(
-        fn=on_image_change,
-        inputs=[image_in],
-        outputs=[prepared_out],
-    )
-
     run_btn.click(
         fn=generate,
-        inputs=[prepared_out, seed_in, steps_in, cfg_in, num_g_in, fmt_in],
-        outputs=[viewer_out, file_out, info_out],
+        inputs=[image_in, seed_in, steps_in, cfg_in, num_g_in, fmt_in],
+        outputs=[prepared_out, viewer_out, file_out, info_out],
     )
 
 
