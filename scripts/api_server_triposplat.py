@@ -28,6 +28,7 @@ if str(REPO_ROOT) not in sys.path:
 
 APP = FastAPI(title="TripoSplat Nymph API")
 NYMPH_UI_PATH = REPO_ROOT / "nymph_triposplat.html"
+VIEWER_UI_PATH = REPO_ROOT / "static" / "viewer" / "viewer.html"
 ASSETS_ROOT = REPO_ROOT / "assets"
 APP.mount("/assets", StaticFiles(directory=str(ASSETS_ROOT)), name="assets")
 
@@ -167,6 +168,11 @@ def _file_record(path: Path) -> dict[str, Any]:
 @APP.get("/nymph", response_class=HTMLResponse)
 def nymph_ui() -> HTMLResponse:
     return HTMLResponse(NYMPH_UI_PATH.read_text(encoding="utf-8"))
+
+
+@APP.get("/viewer", response_class=HTMLResponse)
+def splat_viewer() -> HTMLResponse:
+    return HTMLResponse(VIEWER_UI_PATH.read_text(encoding="utf-8"))
 
 
 @APP.get("/health")

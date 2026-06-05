@@ -334,6 +334,15 @@
       height: 100%;
       z-index: 2;
     }
+    .splat-shell iframe {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      z-index: 2;
+      background: #080b12;
+    }
     .empty {
       display: grid;
       gap: 8px;
@@ -612,11 +621,12 @@
       spark: null,
       splatRoot: null,
       splat: null,
+      viewerFrame: null,
       localSplatObjectUrl: "",
       lastOutputs: {},
     };
 
-    const VIEWER_ASSET_VERSION = "0.1.8";
+    const VIEWER_ASSET_VERSION = "0.1.9";
 
     async function ensureViewerLibs() {
       if (THREE && OrbitControls && SparkRenderer && SplatMesh) return;
@@ -775,8 +785,10 @@
 
     function clearSplat() {
       if (state.splatRoot && state.scene) state.scene.remove(state.splatRoot);
+      if (state.viewerFrame) state.viewerFrame.remove();
       state.splatRoot = null;
       state.splat = null;
+      state.viewerFrame = null;
     }
 
     function splatFileType(nameOrUrl) {
@@ -788,6 +800,17 @@
 
     async function loadSplat(url, label, fileName = "") {
       if (!url) return;
+      if (splatFileType(fileName || url) === "ply") {
+        clearSplat();
+        $("empty").style.display = "none";
+        const frame = document.createElement("iframe");
+        frame.title = "TripoSplat PLY viewer";
+        frame.src = `/viewer?ply=${encodeURIComponent(url)}&ts=${Date.now()}`;
+        $("splat-shell").appendChild(frame);
+        state.viewerFrame = frame;
+        $("viewer-hud").innerHTML = `<span class="pill">${escapeHtml(label)}</span>`;
+        return;
+      }
       await initViewer();
       clearSplat();
       const splat = new SplatMesh({
