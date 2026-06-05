@@ -616,11 +616,13 @@
       lastOutputs: {},
     };
 
+    const VIEWER_ASSET_VERSION = "0.1.7";
+
     async function ensureViewerLibs() {
       if (THREE && OrbitControls && SparkRenderer && SplatMesh) return;
-      const threeModule = await import("/assets/vendor/three.module.js");
-      const controlsModule = await import("/assets/vendor/three-addons/controls/OrbitControls.js");
-      const sparkModule = await import("/assets/vendor/spark.module.js");
+      const threeModule = await import(`/assets/vendor/three.module.js?v=${VIEWER_ASSET_VERSION}`);
+      const controlsModule = await import(`/assets/vendor/three-addons/controls/OrbitControls.js?v=${VIEWER_ASSET_VERSION}`);
+      const sparkModule = await import(`/assets/vendor/spark.module.js?v=${VIEWER_ASSET_VERSION}`);
       THREE = threeModule;
       OrbitControls = controlsModule.OrbitControls;
       SparkRenderer = sparkModule.SparkRenderer;
