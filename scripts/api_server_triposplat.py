@@ -216,6 +216,15 @@ def output_file(relative_path: str) -> FileResponse:
     return FileResponse(str(path), media_type=media_type, filename=path.name)
 
 
+@APP.head("/outputs/{relative_path:path}")
+def output_file_head(relative_path: str) -> Response:
+    path = _safe_output_path(relative_path)
+    media_type = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
+    if path.suffix.lower() in {".ply", ".splat"}:
+        media_type = "application/octet-stream"
+    return Response(headers={"Content-Length": str(path.stat().st_size)}, media_type=media_type)
+
+
 @APP.get("/api/outputs")
 def list_outputs() -> dict[str, Any]:
     root = _output_dir()

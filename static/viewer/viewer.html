@@ -49,9 +49,9 @@
 <script type="importmap">
 {
   "imports": {
-    "three": "/assets/vendor/three.module.js?v=0.1.9",
+    "three": "/assets/vendor/three.module.js?v=0.1.10",
     "three/addons/": "/assets/vendor/three-addons/",
-    "@sparkjsdev/spark": "/assets/vendor/spark.module.js?v=0.1.9"
+    "@sparkjsdev/spark": "/assets/vendor/spark.module.js?v=0.1.10"
   }
 }
 </script>
@@ -138,7 +138,9 @@ function init(url) {
     if (!r.ok) throw new Error(`HTTP ${r.status} ${r.statusText}`);
     const len = r.headers.get("content-length");
     if (len) loadLabel.textContent = `Loading splat (${(len / 1024 / 1024).toFixed(1)} MB)…`;
-  }).catch(e => showError("Fetch failed: " + e.message));
+  }).catch(e => {
+    console.warn("Preview size check failed; continuing with viewer load.", e);
+  });
 
   let checkFrames = 0;
   function checkLoaded() {
