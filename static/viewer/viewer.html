@@ -49,9 +49,9 @@
 <script type="importmap">
 {
   "imports": {
-    "three": "/assets/vendor/three.module.js?v=0.1.10",
+    "three": "/assets/vendor/three.module.js?v=0.1.11",
     "three/addons/": "/assets/vendor/three-addons/",
-    "@sparkjsdev/spark": "/assets/vendor/spark.module.js?v=0.1.10"
+    "@sparkjsdev/spark": "/assets/vendor/spark.module.js?v=0.1.11"
   }
 }
 </script>
@@ -101,7 +101,10 @@ function init(url) {
   controls.maxDistance = 50;
   controls.target.set(0, 0, 0);
 
-  const splat = new SplatMesh({ url });
+  const splat = new SplatMesh({
+    url,
+    fileName: url.split("?", 1)[0].split("/").pop() || "splat.ply",
+  });
   // DEG saves PLYs with -Y up and the front of the object facing roughly
   // along the horizontal axis.  Re-orient for Three.js (+Y up, camera on
   // +Z looking toward -Z): a Group lets us apply a yaw first (to bring the
@@ -112,25 +115,31 @@ function init(url) {
   splatRoot.rotation.x = Math.PI;    // flip Y/Z so it stands upright
   scene.add(splatRoot);
 
-  let framed = false;
-  function tryFrame() {
-    if (framed) return;
-    const box = new THREE.Box3().setFromObject(splatRoot);
-    if (box.isEmpty() || !isFinite(box.min.x)) return;
-    framed = true;
-    // const center = new THREE.Vector3();
-    // const size   = new THREE.Vector3();
-    // box.getCenter(center);
-    // box.getSize(size);
-    // console.log(size);
-    // const maxDim = Math.max(size.x, size.y, size.z);
-    // // With a 45° FOV, half-fov tan ≈ 0.414, so the minimum distance to fit
-    // // a sphere of diameter `maxDim` in view is maxDim / (2*0.414) ≈ 1.21*maxDim.
-    // // Use a small margin (1.15) so the object nearly fills the viewport.
-    // const dist = maxDim * 1.15;
-    // camera.position.copy(center).add(new THREE.Vector3(0, maxDim * 0.15, dist));
-    // controls.target.copy(center);
-    // controls.update();
+  function frameSplat() {
+    splatRoot.updateMatrixWorld(true);
+    const box = splat.getBoundingBox(false);
+    box.applyMatrix4(splat.matrixWorld);
+    if (box.isEmpty() || !isFinite(box.min.x)) {
+      throw new Error("Loaded splat has an empty bounding box.");
+    }
+    const center = new THREE.Vector3();
+    const size = new THREE.Vector3();
+    box.getCenter(center);
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z, 0.01);
+    const halfFov = THREE.MathUtils.degToRad(camera.fov * 0.5);
+    const aspect = Math.max(camera.aspect, 0.01);
+    const fitHeight = size.y / (2 * Math.tan(halfFov));
+    const fitWidth = size.x / (2 * Math.tan(halfFov) * aspect);
+    const dist = Math.max(fitHeight, fitWidth, maxDim * 1.35, 0.35) * 1.18;
+    camera.near = Math.max(0.001, dist / 100);
+    camera.far = Math.max(1000, dist * 100);
+    camera.position.copy(center).add(new THREE.Vector3(0, maxDim * 0.08, dist));
+    camera.lookAt(center);
+    camera.updateProjectionMatrix();
+    controls.target.copy(center);
+    controls.update();
+    loadLabel.textContent = `Loaded ${splat.numSplats.toLocaleString()} splats`;
     loadingEl.style.display = "none";
   }
 
@@ -142,12 +151,12 @@ function init(url) {
     console.warn("Preview size check failed; continuing with viewer load.", e);
   });
 
-  let checkFrames = 0;
-  function checkLoaded() {
-    checkFrames++;
-    if (checkFrames < 5) return;
-    tryFrame();
-  }
+  splat.initialized
+    .then(async () => {
+      frameSplat();
+      await spark.update({ scene, camera });
+    })
+    .catch((err) => showError(`Preview failed: ${err?.message || err}`));
 
   window.addEventListener("resize", () => {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -157,12 +166,8 @@ function init(url) {
 
   renderer.setAnimationLoop(() => {
     controls.update();
-    renderer.render(scene, camera);
-    checkLoaded();
+    spark.render(scene, camera);
   });
-
-  // Fallback: hide loading after 4s regardless of bbox-readiness.
-  setTimeout(() => { loadingEl.style.display = "none"; }, 4000);
 }
 </script>
 </body>

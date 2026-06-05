@@ -626,7 +626,7 @@
       lastOutputs: {},
     };
 
-    const VIEWER_ASSET_VERSION = "0.1.10";
+    const VIEWER_ASSET_VERSION = "0.1.11";
 
     async function ensureViewerLibs() {
       if (THREE && OrbitControls && SparkRenderer && SplatMesh) return;
@@ -770,7 +770,7 @@
       state.spark = spark;
       renderer.setAnimationLoop(() => {
         controls.update();
-        renderer.render(scene, camera);
+        spark.render(scene, camera);
       });
       window.addEventListener("resize", resizeViewer);
     }
@@ -785,6 +785,7 @@
 
     function clearSplat() {
       if (state.splatRoot && state.scene) state.scene.remove(state.splatRoot);
+      if (state.splat?.dispose) state.splat.dispose();
       if (state.viewerFrame) state.viewerFrame.remove();
       state.splatRoot = null;
       state.splat = null;
@@ -796,6 +797,34 @@
       if (lower.endsWith(".ply")) return "ply";
       if (lower.endsWith(".splat")) return "splat";
       return undefined;
+    }
+
+    async function frameSplatMesh(splat, root) {
+      if (!splat || !root || !state.camera || !state.controls || !state.spark) return;
+      root.updateMatrixWorld(true);
+      const box = splat.getBoundingBox(false);
+      box.applyMatrix4(splat.matrixWorld);
+      if (box.isEmpty() || !Number.isFinite(box.min.x)) {
+        throw new Error("Loaded splat has an empty bounding box.");
+      }
+      const center = new THREE.Vector3();
+      const size = new THREE.Vector3();
+      box.getCenter(center);
+      box.getSize(size);
+      const maxDim = Math.max(size.x, size.y, size.z, 0.01);
+      const halfFov = THREE.MathUtils.degToRad(state.camera.fov * 0.5);
+      const aspect = Math.max(state.camera.aspect, 0.01);
+      const fitHeight = size.y / (2 * Math.tan(halfFov));
+      const fitWidth = size.x / (2 * Math.tan(halfFov) * aspect);
+      const dist = Math.max(fitHeight, fitWidth, maxDim * 1.35, 0.35) * 1.18;
+      state.camera.near = Math.max(0.001, dist / 100);
+      state.camera.far = Math.max(1000, dist * 100);
+      state.camera.position.copy(center).add(new THREE.Vector3(0, maxDim * 0.08, dist));
+      state.camera.lookAt(center);
+      state.camera.updateProjectionMatrix();
+      state.controls.target.copy(center);
+      state.controls.update();
+      await state.spark.update({ scene: state.scene, camera: state.camera });
     }
 
     async function loadSplat(url, label, fileName = "") {
@@ -816,7 +845,6 @@
       const splat = new SplatMesh({
         url,
         fileName: fileName || label || url,
-        fileType: splatFileType(fileName || url),
         onProgress: (progress) => {
           if (progress?.total) {
             const loadedMb = (Number(progress.loaded || 0) / 1024 / 1024).toFixed(1);
@@ -825,7 +853,6 @@
           }
         },
       });
-      await splat.initialized;
       const root = new THREE.Group();
       root.add(splat);
       splat.rotation.y = Math.PI / 2;
@@ -833,21 +860,11 @@
       state.scene.add(root);
       state.splatRoot = root;
       state.splat = splat;
+      $("viewer-hud").innerHTML = `<span class="pill">Loading ${escapeHtml(label)}</span>`;
+      await splat.initialized;
+      await frameSplatMesh(splat, root);
       $("empty").style.display = "none";
-      $("viewer-hud").innerHTML = `<span class="pill">${label}</span>`;
-      setTimeout(() => {
-        if (!state.splatRoot || !state.camera || !state.controls) return;
-        const box = new THREE.Box3().setFromObject(state.splatRoot);
-        if (box.isEmpty() || !Number.isFinite(box.min.x)) return;
-        const center = new THREE.Vector3();
-        const size = new THREE.Vector3();
-        box.getCenter(center);
-        box.getSize(size);
-        const maxDim = Math.max(size.x, size.y, size.z, 0.1);
-        state.camera.position.copy(center).add(new THREE.Vector3(0, maxDim * 0.12, maxDim * 1.8));
-        state.controls.target.copy(center);
-        state.controls.update();
-      }, 900);
+      $("viewer-hud").innerHTML = `<span class="pill">${escapeHtml(label)}</span>`;
     }
 
     async function tryLoadSplat(url, label, fileName = "") {
