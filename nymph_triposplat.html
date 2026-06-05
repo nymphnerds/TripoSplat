@@ -10,19 +10,19 @@
       color-scheme: dark;
       --bg: #07100f;
       --surface: #0b1514;
-      --surface-2: #101b1d;
       --line: #1b3536;
       --line-2: #284446;
       --text: #f0faf7;
       --muted: #9bb9b4;
+      --dim: #789d98;
       --teal: #29e6da;
       --lime: #97df48;
       --amber: #ff8a2a;
       --danger: #ff5e6c;
-      --font-head: Bahnschrift, "Arial Narrow", "Segoe UI", sans-serif;
       --font-mono: "Cascadia Mono", "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       --font-body: Inter, "Segoe UI", system-ui, sans-serif;
     }
+
     * { box-sizing: border-box; }
     html, body { height: 100%; }
     body {
@@ -39,6 +39,7 @@
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { border-radius: 999px; background: rgba(41, 230, 218, 0.72); }
+
     .app {
       height: 100vh;
       min-height: 560px;
@@ -54,7 +55,10 @@
       border-right: 1px solid var(--line);
       background: linear-gradient(180deg, rgba(8, 17, 18, 0.94), rgba(5, 12, 12, 0.98));
     }
-    .section { padding: 15px 0; border-top: 1px solid rgba(33, 71, 74, 0.72); }
+    .section {
+      padding: 15px 0;
+      border-top: 1px solid rgba(33, 71, 74, 0.72);
+    }
     .section:first-child { padding-top: 0; border-top: 0; }
     .section-title {
       display: flex;
@@ -76,7 +80,12 @@
       gap: 14px;
       margin-bottom: 10px;
     }
-    .source-copy { color: var(--muted); font-size: 12px; line-height: 1.35; }
+    .source-copy {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
     .drop {
       position: relative;
       aspect-ratio: 1 / 1;
@@ -121,15 +130,7 @@
       font-size: 13px;
     }
     .drop-hint svg { width: 30px; height: 30px; color: var(--muted); }
-    .file-input {
-      position: fixed;
-      left: -10000px;
-      top: 0;
-      width: 1px;
-      height: 1px;
-      opacity: 0;
-      pointer-events: none;
-    }
+
     .command-deck { display: grid; gap: 7px; margin-top: 10px; }
     .command-row { display: grid; gap: 7px; align-items: stretch; }
     .source-tools { grid-template-columns: 1.22fr 0.78fr; }
@@ -153,6 +154,7 @@
       cursor: pointer;
     }
     .btn::before { content: "//"; color: var(--lime); }
+    .btn:hover:not(:disabled) { color: var(--lime); border-color: #315659; background: #122022; }
     .btn.primary {
       color: #06110f;
       border-color: var(--lime);
@@ -165,6 +167,14 @@
       border-color: rgba(255, 139, 39, 0.52);
       background: rgba(37, 20, 12, 0.82);
     }
+    .btn:disabled {
+      color: #5e7a75;
+      border-color: #1f3637;
+      background: rgba(11, 20, 21, 0.72);
+      cursor: not-allowed;
+      opacity: 0.72;
+    }
+    .btn:disabled::before { color: #355a56; }
     .command-row .btn {
       width: 100%;
       min-width: 0;
@@ -174,6 +184,7 @@
       font-size: 9.8px;
       text-align: center;
     }
+
     label {
       display: grid;
       gap: 6px;
@@ -215,9 +226,20 @@
       font-size: 12px;
       line-height: 1.35;
     }
-    .status-line { display: flex; justify-content: space-between; gap: 12px; }
-    .status-line strong { color: var(--text); font-family: var(--font-mono); font-size: 10.5px; }
-    .stage { min-width: 0; height: 100vh; display: flex; flex-direction: column; }
+    .status-card .status-line { display: flex; justify-content: space-between; gap: 12px; }
+    .status-card .status-line strong { color: var(--text); font-family: var(--font-mono); font-size: 10.5px; }
+
+    .stage {
+      min-width: 0;
+      min-height: 0;
+      height: 100vh;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      border-left: 1px solid rgba(33, 71, 74, 0.58);
+      background:
+        radial-gradient(circle at 50% 18%, rgba(41, 230, 218, 0.07), transparent 36%),
+        rgba(3, 10, 10, 0.35);
+    }
     .topbar {
       min-height: 48px;
       display: flex;
@@ -252,34 +274,65 @@
     .dot.ready { background: var(--lime); box-shadow: 0 0 18px rgba(151, 223, 72, 0.45); }
     .dot.work { background: var(--teal); box-shadow: 0 0 18px rgba(41, 230, 218, 0.5); }
     .dot.err { background: var(--danger); box-shadow: 0 0 18px rgba(255, 94, 108, 0.45); }
-    .workspace { min-height: 0; flex: 1; display: grid; grid-template-rows: minmax(0, 1fr) auto auto; }
-    .viewer-shell {
-      position: relative;
+
+    .viewer {
+      min-width: 0;
       min-height: 0;
-      overflow: hidden;
-      background:
-        radial-gradient(circle at 50% 44%, rgba(41, 230, 218, 0.075), transparent 32%),
-        rgba(5, 12, 12, 0.92);
-    }
-    canvas { display: block; width: 100%; height: 100%; }
-    .empty {
-      position: absolute;
-      inset: 0;
       display: grid;
       place-items: center;
-      gap: 10px;
-      color: rgba(155, 185, 180, 0.8);
-      text-align: center;
-      font-family: var(--font-mono);
-      font-size: 12px;
-      font-weight: 850;
-      pointer-events: none;
+      padding: 16px 24px 14px;
+      position: relative;
+      overflow: hidden;
     }
-    .empty svg { width: 36px; height: 36px; color: rgba(41, 230, 218, 0.65); }
+    .splat-shell {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      border: 1px solid rgba(40, 68, 70, 0.9);
+      border-radius: 8px;
+      background:
+        linear-gradient(rgba(2, 8, 7, 0.36), rgba(2, 8, 7, 0.72)),
+        url("/assets/nymphs_preview_forest.png") center center / cover no-repeat,
+        rgba(4, 12, 11, 0.82);
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      position: relative;
+    }
+    .splat-shell canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+    }
+    .empty {
+      display: grid;
+      gap: 8px;
+      place-items: center;
+      color: var(--dim);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 900;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 20px;
+      position: relative;
+      z-index: 1;
+    }
+    .empty::before {
+      content: "Generated splat appears here.";
+      color: var(--teal);
+      font-size: 11px;
+      line-height: 1;
+      white-space: nowrap;
+    }
     .viewer-hud {
       position: absolute;
       left: 14px;
       bottom: 14px;
+      z-index: 3;
       display: flex;
       flex-wrap: wrap;
       gap: 7px;
@@ -299,82 +352,135 @@
       font-size: 10px;
       font-weight: 800;
     }
-    .top-progress {
-      min-height: 54px;
+
+    .progress {
+      padding: 9px 24px 10px;
       display: grid;
-      grid-template-columns: auto auto minmax(120px, 1fr);
-      grid-template-rows: auto 7px;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 16px 12px;
+      gap: 6px;
+      align-content: end;
       border-top: 1px solid var(--line);
-      background: rgba(5, 13, 13, 0.9);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 850;
-    }
-    .top-progress-icon { width: 20px; height: 20px; color: #bdebe4; }
-    .top-progress-stage { color: var(--text); font-weight: 900; white-space: nowrap; }
-    .top-progress-copy { min-width: 0; display: grid; gap: 3px; }
-    .top-progress-text,
-    .top-progress-extra { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .top-progress-extra { color: var(--muted); font-size: 10px; }
-    .bar {
-      position: relative;
-      grid-column: 1 / -1;
-      height: 7px;
-      overflow: hidden;
-      border-radius: 99px;
-      background: rgba(28, 58, 60, 0.78);
-      border: 1px solid rgba(49, 89, 91, 0.64);
-    }
-    .bar span {
-      position: absolute;
-      inset: 0 auto 0 0;
-      width: 0%;
-      border-radius: inherit;
-      background: linear-gradient(90deg, var(--teal), var(--lime));
-      transition: width 180ms ease;
-    }
-    .output-strip {
-      min-height: 104px;
-      display: grid;
-      gap: 7px;
-      padding: 8px 16px 10px;
-      border-top: 1px solid var(--line);
-      background: rgba(8, 17, 18, 0.92);
+      background: rgba(11, 23, 24, 0.92);
       font-family: var(--font-mono);
     }
-    .strip-head {
+    .progress .status-line {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 14px;
       color: var(--muted);
       font-size: 11px;
-      font-weight: 850;
+      overflow: hidden;
     }
-    .strip-title { display: flex; gap: 8px; min-width: 0; overflow: hidden; }
-    .strip-title span:first-child { color: var(--lime); text-transform: uppercase; }
-    .strip-title span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .strip-controls { display: flex; gap: 6px; }
-    .strip-controls button {
-      width: 28px;
-      height: 24px;
+    .progress .status-line span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .model-line {
+      min-width: 0;
+      overflow: hidden;
+      color: var(--dim);
+      font-size: 10.5px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .model-line span:first-child {
+      color: var(--teal);
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    .progress-line {
+      display: grid;
+      grid-template-columns: 160px minmax(0, 1fr) 86px;
+      gap: 10px;
+      color: var(--muted);
+      align-items: center;
+    }
+    .progress-stage {
+      color: var(--text);
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    #progress-detail {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #progress-percent { text-align: right; }
+    .bar {
+      height: 6px;
+      border-radius: 999px;
+      background: #223532;
+      overflow: hidden;
+    }
+    .bar span {
+      display: block;
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--teal), var(--lime), var(--amber));
+      transition: width 0.22s ease;
+    }
+    .strip-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      margin-top: 6px;
+      margin-bottom: 6px;
+    }
+    .strip-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      color: var(--muted);
+      font-family: Consolas, monospace;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    .strip-title span:first-child { color: var(--lime); }
+    .strip-title span:last-child {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      color: var(--teal);
+    }
+    .strip-controls,
+    .strip-select-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: nowrap;
+      gap: 6px;
+      min-width: 0;
+      white-space: nowrap;
+    }
+    .strip-controls button,
+    .strip-select-actions button {
+      min-height: 28px;
+      padding: 0 9px;
       border: 1px solid var(--line-2);
       border-radius: 5px;
       color: var(--teal);
       background: rgba(15, 26, 28, 0.85);
       cursor: pointer;
       font-family: var(--font-mono);
+      font-size: 9.8px;
       font-weight: 900;
     }
-    .strip-controls button:disabled { opacity: 0.4; cursor: default; }
+    .strip-controls button:disabled,
+    .strip-select-actions button:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
     .strip-browser {
       display: grid;
-      grid-template-columns: minmax(180px, 280px) minmax(0, 1fr);
+      grid-template-columns: minmax(220px, 1fr) auto;
       gap: 8px;
-      align-items: stretch;
+      align-items: center;
+      margin-bottom: 8px;
     }
     .folder-select {
       height: 28px;
@@ -390,14 +496,7 @@
       overscroll-behavior-inline: contain;
       min-height: 0;
     }
-    .gallery:empty::before {
-      content: "No generated splats yet.";
-      display: grid;
-      place-items: center;
-      height: 70px;
-      color: var(--muted);
-      font-size: 11px;
-    }
+    .gallery:empty { display: none; }
     .thumb {
       border: 1px solid rgba(255,255,255,0.09);
       border-radius: 8px;
@@ -409,6 +508,7 @@
       cursor: pointer;
       min-width: 0;
     }
+    .thumb.selected { border-color: var(--lime); }
     .thumb img,
     .thumb .thumb-fallback {
       width: 100%;
@@ -426,12 +526,11 @@
     }
     .thumb span {
       color: var(--muted);
-      font-size: 10px;
+      font-size: 11px;
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
     }
-    .thumb.selected { border-color: var(--lime); }
     .thumb.selected span { color: var(--lime); }
     .toast {
       position: fixed;
@@ -440,6 +539,7 @@
       transform: translateX(-50%) translateY(20px);
       opacity: 0;
       pointer-events: none;
+      max-width: min(720px, calc(100vw - 36px));
       padding: 9px 12px;
       border: 1px solid var(--line-2);
       border-radius: 8px;
@@ -450,14 +550,15 @@
       transition: opacity 160ms ease, transform 160ms ease;
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
     @media (max-width: 760px) {
       body { overflow: auto; }
       .app { grid-template-columns: 1fr; height: auto; min-height: 100vh; }
       .sidebar { height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
       .stage { height: 78vh; min-height: 560px; }
-      .top-progress { grid-template-columns: auto auto minmax(0, 1fr); }
-      .top-progress .bar { grid-column: 1 / -1; }
+      .progress-line { grid-template-columns: 100px minmax(0, 1fr) 54px; }
       .strip-browser { grid-template-columns: 1fr; }
+      .strip-select-actions { overflow-x: auto; }
     }
   </style>
 </head>
@@ -470,17 +571,17 @@
           <span class="source-copy" id="source-label">No image</span>
         </div>
         <div class="drop" id="drop">
-          <img id="source-preview" alt="">
+          <input id="source-file" type="file" accept="image/*" hidden>
+          <img id="source-preview" alt="Source preview">
           <div class="drop-hint" id="drop-hint"><i data-lucide="image-plus"></i><span>Drop image</span></div>
         </div>
-        <input id="file-input" class="file-input" type="file" accept="image/*">
         <div class="command-deck">
           <div class="command-row source-tools">
-            <button class="btn" id="pick-btn" type="button">Pick Image</button>
-            <button class="btn danger" id="clear-btn" type="button">Clear</button>
+            <button class="btn" id="pick-source" type="button">Pick Image</button>
+            <button class="btn danger" id="clear-source" type="button" disabled>Clear</button>
           </div>
           <div class="command-row">
-            <button class="btn primary" id="generate-btn" type="button">Generate Splat</button>
+            <button class="btn primary" id="generate" type="button" disabled>Generate Splat</button>
           </div>
         </div>
       </section>
@@ -511,7 +612,7 @@
       </section>
 
       <section class="section">
-        <h2 class="section-title">Advanced parameters</h2>
+        <h2 class="section-title">Advanced Parameters</h2>
         <label>
           <span class="value-row"><span>Steps</span><span id="steps-value">20</span></span>
           <input id="steps" type="range" min="1" max="50" step="1" value="20">
@@ -549,34 +650,42 @@
     <section class="stage">
       <header class="topbar">
         <div class="status"><span class="dot" id="dot"></span><span id="status-text">Waiting for image</span></div>
-        <div class="status" id="runtime-text">TripoSplat</div>
+        <div class="status">TripoSplat</div>
       </header>
-      <div class="workspace">
-        <div class="viewer-shell" id="viewer-shell">
-          <div class="empty" id="empty"><i data-lucide="sparkles"></i><div>Generated splat appears here.</div></div>
+      <section class="viewer">
+        <div class="splat-shell" id="splat-shell">
+          <div class="empty" id="empty" aria-label="Generated splat appears here."></div>
           <div class="viewer-hud" id="viewer-hud"></div>
         </div>
-        <section class="output-strip" aria-label="Generated splat browser">
-          <div class="strip-head">
-            <div class="strip-title"><span>Browse</span><span id="strip-label">Recent splats (0)</span></div>
-            <div class="strip-controls">
-              <button id="strip-prev" type="button" title="Previous output">&lt;</button>
-              <button id="strip-next" type="button" title="Next output">&gt;</button>
-              <button id="strip-refresh" type="button" title="Refresh outputs">R</button>
-            </div>
-          </div>
-          <div class="strip-browser">
-            <select class="folder-select" id="output-picker" aria-label="Output run"></select>
-            <div class="gallery" id="gallery"></div>
-          </div>
-        </section>
-        <div class="top-progress">
-          <i class="top-progress-icon" data-lucide="activity"></i>
-          <span class="top-progress-stage" id="progress-stage">Idle</span>
-          <div class="top-progress-copy"><span class="top-progress-text" id="progress-text">Idle</span><span class="top-progress-extra" id="progress-extra">Waiting for source image.</span></div>
-          <div class="bar"><span id="progress-bar"></span></div>
+      </section>
+      <section class="progress">
+        <div class="status-line">
+          <span id="runtime-text">TripoSplat</span>
+          <span id="output-label">No output</span>
         </div>
-      </div>
+        <div class="model-line"><span>Preview</span> <span id="selected-output-text">PLY / SPLAT</span></div>
+        <div class="progress-line">
+          <span class="progress-stage" id="progress-stage">Idle</span>
+          <span id="progress-detail">Waiting for source image.</span>
+          <span id="progress-percent">0%</span>
+        </div>
+        <div class="bar"><span id="progress-bar"></span></div>
+        <div class="strip-head">
+          <div class="strip-title"><span>Browse</span><span id="strip-label">Recent splats (0)</span></div>
+          <div class="strip-controls">
+            <button id="strip-prev" type="button" title="Previous output">&lt;</button>
+            <button id="strip-next" type="button" title="Next output">&gt;</button>
+          </div>
+        </div>
+        <div class="strip-browser">
+          <select class="folder-select" id="output-folder" aria-label="Output folder"></select>
+          <div class="strip-select-actions">
+            <button id="refresh-gallery" type="button">Refresh</button>
+            <button id="open-outputs" type="button">Open Outputs</button>
+          </div>
+        </div>
+        <div class="gallery" id="gallery"></div>
+      </section>
     </section>
   </main>
   <div class="toast" id="toast"></div>
@@ -597,20 +706,23 @@
 
     const $ = (id) => document.getElementById(id);
     const state = {
-      file: null,
-      imageData: "",
+      sourceFile: null,
+      sourceObjectUrl: "",
+      sourceDataUrl: "",
       busy: false,
       progressTimer: null,
       scene: null,
       renderer: null,
       controls: null,
+      camera: null,
+      spark: null,
       splatRoot: null,
       splat: null,
-      spark: null,
-      camera: null,
+      outputs: [],
+      visibleOutputs: [],
+      outputView: "recent",
+      selectedOutput: null,
       lastOutputs: {},
-      outputRuns: [],
-      selectedOutputIndex: -1,
     };
 
     function toast(message) {
@@ -618,7 +730,7 @@
       el.textContent = message;
       el.classList.add("show");
       clearTimeout(toast._timer);
-      toast._timer = setTimeout(() => el.classList.remove("show"), 3000);
+      toast._timer = setTimeout(() => el.classList.remove("show"), 3200);
     }
 
     function setStatus(text, kind = "") {
@@ -626,31 +738,12 @@
       $("dot").className = `dot ${kind}`;
     }
 
-    function setProgress(stage, detail, percent, extra = "") {
-      $("progress-stage").textContent = stage;
-      $("progress-text").textContent = detail;
-      $("progress-extra").textContent = extra;
-      $("progress-bar").style.width = `${Math.max(0, Math.min(100, Number(percent) || 0))}%`;
-    }
-
-    function updateActionState() {
-      $("pick-btn").disabled = state.busy;
-      $("clear-btn").disabled = state.busy || !state.imageData;
-      $("generate-btn").disabled = state.busy || !state.imageData;
-      $("strip-prev").disabled = state.busy || state.outputRuns.length < 2;
-      $("strip-next").disabled = state.busy || state.outputRuns.length < 2;
-      $("strip-refresh").disabled = state.busy;
-      $("output-picker").disabled = state.busy || state.outputRuns.length === 0;
-      $("download-ply").disabled = !state.lastOutputs.ply;
-      $("download-splat").disabled = !state.lastOutputs.splat;
-    }
-
-    function updateSliderLabels() {
-      $("steps-value").textContent = $("steps").value;
-      $("guidance-value").textContent = Number($("guidance").value).toFixed(1);
-      $("shift-value").textContent = Number($("shift").value).toFixed(1);
-      $("erode-value").textContent = $("erode").value;
-      $("gaussian-value").textContent = $("num-gaussians").value;
+    function setProgress(stage, detail, percent) {
+      const value = Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) : 0;
+      $("progress-stage").textContent = stage || "Idle";
+      $("progress-detail").textContent = detail || "";
+      $("progress-percent").textContent = `${Math.round(value)}%`;
+      $("progress-bar").style.width = `${value}%`;
     }
 
     function errorText(err) {
@@ -663,8 +756,29 @@
       return raw || "Unexpected error.";
     }
 
-    async function readFile(file) {
-      return await new Promise((resolve, reject) => {
+    function updateSliderLabels() {
+      $("steps-value").textContent = $("steps").value;
+      $("guidance-value").textContent = Number($("guidance").value).toFixed(1);
+      $("shift-value").textContent = Number($("shift").value).toFixed(1);
+      $("erode-value").textContent = $("erode").value;
+      $("gaussian-value").textContent = $("num-gaussians").value;
+    }
+
+    function updateButtons() {
+      const hasSource = !!state.sourceFile;
+      $("pick-source").disabled = state.busy;
+      $("clear-source").disabled = state.busy || !hasSource;
+      $("generate").disabled = state.busy || !hasSource;
+      $("download-ply").disabled = !state.lastOutputs.ply;
+      $("download-splat").disabled = !state.lastOutputs.splat;
+      $("strip-prev").disabled = state.visibleOutputs.length < 2;
+      $("strip-next").disabled = state.visibleOutputs.length < 2;
+      $("refresh-gallery").disabled = state.busy;
+      $("output-folder").disabled = state.outputs.length === 0;
+    }
+
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(String(reader.result || ""));
         reader.onerror = () => reject(reader.error || new Error("Could not read file."));
@@ -672,64 +786,45 @@
       });
     }
 
-    async function setSource(file) {
+    async function setSourceFile(file) {
       if (!file) return;
       if (!file.type?.startsWith("image/")) {
         toast("Choose an image file.");
         return;
       }
-      state.file = file;
-      state.imageData = await readFile(file);
-      $("source-label").textContent = file.name;
-      $("source-preview").src = state.imageData;
+      state.sourceFile = file;
+      state.sourceDataUrl = await fileToDataUrl(file);
+      if (state.sourceObjectUrl) URL.revokeObjectURL(state.sourceObjectUrl);
+      state.sourceObjectUrl = URL.createObjectURL(file);
+      $("source-preview").src = state.sourceObjectUrl;
       $("source-preview").style.display = "block";
       $("drop-hint").style.display = "none";
+      $("source-label").textContent = file.name;
       setStatus("Image ready", "ready");
-      setProgress("Ready", "Source image selected.", 0, file.name);
-      updateActionState();
-    }
-
-    async function chooseSourceImage() {
-      if (state.busy) return;
-      if (window.showOpenFilePicker) {
-        try {
-          const [handle] = await window.showOpenFilePicker({
-            multiple: false,
-            types: [{
-              description: "Images",
-              accept: { "image/*": [".png", ".jpg", ".jpeg", ".webp", ".bmp"] },
-            }],
-          });
-          if (handle) {
-            await setSource(await handle.getFile());
-            return;
-          }
-        } catch (err) {
-          if (err?.name === "AbortError") return;
-        }
-      }
-      const input = $("file-input");
-      input.value = "";
-      input.click();
+      setProgress("Ready", "Source image selected.", 0);
+      updateButtons();
     }
 
     function clearSource() {
-      state.file = null;
-      state.imageData = "";
-      $("source-label").textContent = "No image";
+      state.sourceFile = null;
+      state.sourceDataUrl = "";
+      if (state.sourceObjectUrl) URL.revokeObjectURL(state.sourceObjectUrl);
+      state.sourceObjectUrl = "";
+      $("source-file").value = "";
       $("source-preview").removeAttribute("src");
       $("source-preview").style.display = "none";
       $("drop-hint").style.display = "grid";
+      $("source-label").textContent = "No image";
       setStatus("Waiting for image");
-      setProgress("Idle", "Idle", 0, "Waiting for source image.");
-      updateActionState();
+      setProgress("Idle", "Waiting for source image.", 0);
+      updateButtons();
     }
 
     function initViewer() {
       if (state.renderer) return;
-      const shell = $("viewer-shell");
+      const shell = $("splat-shell");
       const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(45, shell.clientWidth / shell.clientHeight, 0.01, 1000);
+      const camera = new THREE.PerspectiveCamera(45, shell.clientWidth / Math.max(shell.clientHeight, 1), 0.01, 1000);
       camera.position.set(0, 0.25, 1.8);
       const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
       renderer.setPixelRatio(window.devicePixelRatio);
@@ -743,7 +838,6 @@
       controls.minDistance = 0.2;
       controls.maxDistance = 50;
       controls.target.set(0, 0, 0);
-
       state.scene = scene;
       state.camera = camera;
       state.renderer = renderer;
@@ -758,21 +852,20 @@
 
     function resizeViewer() {
       if (!state.renderer || !state.camera) return;
-      const shell = $("viewer-shell");
+      const shell = $("splat-shell");
       state.camera.aspect = shell.clientWidth / Math.max(shell.clientHeight, 1);
       state.camera.updateProjectionMatrix();
       state.renderer.setSize(shell.clientWidth, shell.clientHeight);
     }
 
     function clearSplat() {
-      if (state.splatRoot && state.scene) {
-        state.scene.remove(state.splatRoot);
-      }
+      if (state.splatRoot && state.scene) state.scene.remove(state.splatRoot);
       state.splatRoot = null;
       state.splat = null;
     }
 
     function loadSplat(url, label) {
+      if (!url) return;
       initViewer();
       clearSplat();
       const splat = new SplatMesh({ url });
@@ -812,23 +905,37 @@
       }
     }
 
-    function outputRunLabel(run) {
-      if (!run) return "";
-      const date = new Date((run.modified || 0) * 1000);
-      const time = Number.isFinite(date.getTime()) ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
-      return time ? `${run.id} - ${time}` : run.id;
+    function outputKey(output) {
+      return output?.id || output?.relative_path || output?.url || "";
+    }
+
+    function outputDateKey(output) {
+      const modified = Number(output?.modified || 0);
+      if (!modified) return "Unknown Date";
+      const date = new Date(modified * 1000);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function outputLabel(output) {
+      return output?.id?.replace(/^triposplat_/, "") || output?.id || "Splat";
+    }
+
+    function previewOutput(output) {
+      return output?.outputs?.ply || output?.outputs?.splat || null;
     }
 
     function groupOutputRuns(files) {
       const runs = new Map();
       for (const file of files || []) {
-        const parts = String(file.relative_path || "").split("/");
-        if (parts.length < 2) continue;
-        const runId = parts[0];
-        const name = parts[parts.length - 1].toLowerCase();
+        const segments = String(file.relative_path || "").split("/");
+        if (segments.length < 2) continue;
+        const runId = segments[0];
+        const name = segments[segments.length - 1].toLowerCase();
         const run = runs.get(runId) || {
           id: runId,
-          label: runId,
           modified: 0,
           outputs: {},
           thumbnail: null,
@@ -847,123 +954,162 @@
         .slice(0, 80);
     }
 
-    function renderOutputPicker() {
-      const picker = $("output-picker");
-      const gallery = $("gallery");
-      picker.innerHTML = "";
-      gallery.innerHTML = "";
-      $("strip-label").textContent = `Recent splats (${state.outputRuns.length})`;
-      if (!state.outputRuns.length) {
+    function syncOutputViewOptions(outputs) {
+      const select = $("output-folder");
+      const dates = [...new Set(outputs.map(outputDateKey))].sort().reverse();
+      const validViews = new Set(["recent", ...dates.map((date) => `date:${date}`)]);
+      if (!validViews.has(state.outputView)) state.outputView = "recent";
+      select.innerHTML = "";
+      const recent = document.createElement("option");
+      recent.value = "recent";
+      recent.textContent = `Recent (${outputs.length})`;
+      select.appendChild(recent);
+      for (const date of dates) {
+        const count = outputs.filter((output) => outputDateKey(output) === date).length;
         const option = document.createElement("option");
-        option.textContent = "No generated splats";
-        option.value = "";
-        picker.appendChild(option);
-        $("output-state").textContent = state.lastOutputs.ply || state.lastOutputs.splat ? $("output-state").textContent : "none";
-        updateActionState();
-        return;
+        option.value = `date:${date}`;
+        option.textContent = `${date} (${count})`;
+        select.appendChild(option);
       }
-      for (const [index, run] of state.outputRuns.entries()) {
-        const option = document.createElement("option");
-        option.value = String(index);
-        option.textContent = outputRunLabel(run);
-        picker.appendChild(option);
+      select.value = state.outputView;
+    }
 
-        const button = document.createElement("button");
-        button.className = `thumb${index === state.selectedOutputIndex ? " selected" : ""}`;
-        button.type = "button";
-        button.title = run.id;
-        button.addEventListener("click", () => selectOutputRun(index));
-        if (run.thumbnail) {
+    function visibleOutputs() {
+      syncOutputViewOptions(state.outputs);
+      if (state.outputView === "recent") return state.outputs;
+      if (state.outputView.startsWith("date:")) {
+        const date = state.outputView.slice(5);
+        return state.outputs.filter((output) => outputDateKey(output) === date);
+      }
+      return state.outputs;
+    }
+
+    function currentOutputViewLabel() {
+      if (state.outputView === "recent") return "Recent splats";
+      if (state.outputView.startsWith("date:")) return state.outputView.slice(5);
+      return "Splats";
+    }
+
+    function showOutput(output, load = true) {
+      if (!output) return;
+      state.selectedOutput = output;
+      state.lastOutputs = output.outputs || {};
+      const preview = previewOutput(output);
+      $("output-state").textContent = output.id;
+      $("output-label").textContent = output.id;
+      $("selected-output-text").textContent = [
+        output.outputs?.ply ? "PLY" : "",
+        output.outputs?.splat ? "SPLAT" : "",
+      ].filter(Boolean).join(" / ") || "PLY / SPLAT";
+      if (load && preview) loadSplat(preview.url, output.id);
+      for (const node of document.querySelectorAll(".thumb")) {
+        node.classList.toggle("selected", node.dataset.key === outputKey(output));
+      }
+      updateButtons();
+    }
+
+    function renderGallery() {
+      const gallery = $("gallery");
+      gallery.innerHTML = "";
+      state.visibleOutputs = visibleOutputs();
+      const label = currentOutputViewLabel();
+      $("strip-label").textContent = `${label} (${state.visibleOutputs.length})`;
+      for (const output of state.visibleOutputs) {
+        const node = document.createElement("button");
+        node.className = "thumb";
+        node.type = "button";
+        node.dataset.key = outputKey(output);
+        if (state.selectedOutput && outputKey(state.selectedOutput) === outputKey(output)) node.classList.add("selected");
+        if (output.thumbnail) {
           const img = document.createElement("img");
-          img.src = run.thumbnail.url;
+          img.src = output.thumbnail.url;
           img.alt = "";
-          button.appendChild(img);
+          node.appendChild(img);
         } else {
           const fallback = document.createElement("div");
           fallback.className = "thumb-fallback";
-          fallback.textContent = run.outputs.splat ? "SPLAT" : "PLY";
-          button.appendChild(fallback);
+          fallback.textContent = output.outputs?.splat ? "SPLAT" : "PLY";
+          node.appendChild(fallback);
         }
-        const label = document.createElement("span");
-        label.textContent = run.id.replace(/^triposplat_/, "");
-        button.appendChild(label);
-        gallery.appendChild(button);
+        const text = document.createElement("span");
+        text.textContent = outputLabel(output);
+        node.appendChild(text);
+        node.addEventListener("click", () => showOutput(output));
+        gallery.appendChild(node);
       }
-      if (state.selectedOutputIndex >= 0) picker.value = String(state.selectedOutputIndex);
-      updateActionState();
-    }
-
-    function selectOutputRun(index, load = true) {
-      if (!state.outputRuns.length) return;
-      const count = state.outputRuns.length;
-      const normalized = ((index % count) + count) % count;
-      const run = state.outputRuns[normalized];
-      state.selectedOutputIndex = normalized;
-      state.lastOutputs = run.outputs || {};
-      $("output-state").textContent = run.id;
-      if (load) {
-        const preview = run.outputs.ply || run.outputs.splat;
-        if (preview) loadSplat(preview.url, run.id);
-      }
-      renderOutputPicker();
+      if (!state.selectedOutput && state.visibleOutputs[0]) showOutput(state.visibleOutputs[0], false);
+      updateButtons();
     }
 
     async function refreshOutputs(selectRunId = "") {
       try {
         const response = await fetch("/api/outputs", { cache: "no-store" });
         const data = await response.json();
-        state.outputRuns = groupOutputRuns(data.outputs);
-        let index = state.outputRuns.findIndex((run) => run.id === selectRunId);
-        if (index < 0 && state.selectedOutputIndex >= 0 && state.selectedOutputIndex < state.outputRuns.length) {
-          index = state.selectedOutputIndex;
-        }
-        if (index < 0 && state.outputRuns.length) index = 0;
-        if (index >= 0) {
-          selectOutputRun(index, false);
-        } else {
-          state.selectedOutputIndex = -1;
-          renderOutputPicker();
-        }
+        state.outputs = groupOutputRuns(data.outputs);
+        renderGallery();
+        const selected = state.outputs.find((output) => output.id === selectRunId);
+        if (selected) showOutput(selected, false);
       } catch {
-        renderOutputPicker();
+        renderGallery();
       }
     }
 
-    async function pollProgress() {
+    function selectFromVisible(offset) {
+      if (!state.visibleOutputs.length) return;
+      const current = state.visibleOutputs.findIndex((output) => outputKey(output) === outputKey(state.selectedOutput));
+      const next = current < 0 ? 0 : (current + offset + state.visibleOutputs.length) % state.visibleOutputs.length;
+      showOutput(state.visibleOutputs[next]);
+    }
+
+    function scrollGalleryWithWheel(event) {
+      const gallery = $("gallery");
+      if (!gallery || gallery.scrollWidth <= gallery.clientWidth) return;
+      const dominantY = Math.abs(event.deltaY) >= Math.abs(event.deltaX);
+      const delta = dominantY ? event.deltaY : event.deltaX;
+      if (!delta) return;
+      const multiplier = event.deltaMode === 1 ? 32 : event.deltaMode === 2 ? gallery.clientWidth : 1;
+      event.preventDefault();
+      gallery.scrollLeft += delta * multiplier;
+    }
+
+    async function pollTask() {
       try {
-        const response = await fetch("/progress", { cache: "no-store" });
+        const response = await fetch("/active_task", { cache: "no-store" });
+        if (!response.ok) return;
         const task = await response.json();
-        const percent = Number(task.progress_percent || 0);
+        const percent = Number(task.progress_percent);
         if (task.status === "processing") {
-          setProgress(task.stage || "Working", task.detail || "Working", percent);
+          setProgress(task.stage || "Working", task.detail || "Processing.", Number.isFinite(percent) ? percent : 8);
         }
       } catch {}
     }
 
-    function startProgressPolling() {
+    function startProgress() {
       clearInterval(state.progressTimer);
-      state.progressTimer = setInterval(pollProgress, 800);
+      pollTask();
+      state.progressTimer = setInterval(pollTask, 700);
     }
 
-    function stopProgressPolling() {
+    function stopProgress(done, detail) {
       clearInterval(state.progressTimer);
       state.progressTimer = null;
+      if (done) setProgress("Done", detail || "Complete.", 100);
     }
 
     async function generate() {
       if (state.busy) return;
-      if (!state.imageData) {
-        toast("Pick an image first.");
+      if (!state.sourceDataUrl) {
+        toast("Choose a source image first.");
         return;
       }
       state.busy = true;
-      updateActionState();
+      updateButtons();
       setStatus("Generating", "work");
-      setProgress("Generate", "Sending TripoSplat request.", 8);
-      startProgressPolling();
+      setProgress("Queued", "Preparing TripoSplat request.", 8);
+      startProgress();
       try {
         const payload = {
-          image: state.imageData,
+          image: state.sourceDataUrl,
           seed: Number($("seed").value || 42),
           steps: Number($("steps").value || 20),
           guidance_scale: Number($("guidance").value || 3),
@@ -981,19 +1127,23 @@
         const result = await response.json();
         state.lastOutputs = result.outputs || {};
         $("output-state").textContent = result.run_id || "saved";
+        $("output-label").textContent = result.run_id || "Splat ready";
         loadSplat(result.preview.url, `${result.num_gaussians.toLocaleString()} gaussians`);
-        setStatus("Complete", "ready");
-        setProgress("Complete", "Saved TripoSplat splat outputs.", 100, result.run_id || "");
+        setStatus("Splat ready", "ready");
+        stopProgress(true, "Saved TripoSplat splat outputs.");
         await refreshOutputs(result.run_id || "");
+        const selected = state.outputs.find((output) => output.id === result.run_id);
+        if (selected) showOutput(selected, false);
       } catch (err) {
-        setStatus("Generate failed", "err");
+        console.error(err);
+        setStatus("Generation failed", "err");
+        stopProgress(false);
         setProgress("Failed", errorText(err), 0);
         toast(errorText(err));
       } finally {
         state.busy = false;
-        stopProgressPolling();
         refreshServerInfo();
-        updateActionState();
+        updateButtons();
       }
     }
 
@@ -1003,52 +1153,59 @@
       window.location.href = item.url;
     }
 
-    function wireDrop() {
+    function moduleAction(action) {
+      window.location.href = `nymphs-module-action://${action}`;
+    }
+
+    function bindDrop() {
       const drop = $("drop");
-      drop.addEventListener("click", chooseSourceImage);
-      $("pick-btn").addEventListener("click", chooseSourceImage);
-      $("file-input").addEventListener("change", (event) => setSource(event.target.files?.[0]));
-      for (const type of ["dragenter", "dragover"]) {
-        drop.addEventListener(type, (event) => {
+      const input = $("source-file");
+      drop.addEventListener("click", () => input.click());
+      $("pick-source").addEventListener("click", () => input.click());
+      input.addEventListener("change", (event) => setSourceFile(event.target.files?.[0]));
+      for (const name of ["dragenter", "dragover"]) {
+        drop.addEventListener(name, (event) => {
           event.preventDefault();
           drop.classList.add("drag");
         });
       }
-      for (const type of ["dragleave", "drop"]) {
-        drop.addEventListener(type, (event) => {
+      for (const name of ["dragleave", "drop"]) {
+        drop.addEventListener(name, (event) => {
           event.preventDefault();
           drop.classList.remove("drag");
         });
       }
-      drop.addEventListener("drop", (event) => setSource(event.dataTransfer?.files?.[0]));
+      drop.addEventListener("drop", (event) => {
+        event.preventDefault();
+        setSourceFile(event.dataTransfer?.files?.[0]);
+      });
     }
 
     function init() {
       lucide.createIcons();
-      wireDrop();
+      bindDrop();
       updateSliderLabels();
       for (const id of ["steps", "guidance", "shift", "erode", "num-gaussians"]) {
         $(id).addEventListener("input", updateSliderLabels);
         $(id).addEventListener("change", updateSliderLabels);
       }
-      $("clear-btn").addEventListener("click", clearSource);
-      $("generate-btn").addEventListener("click", generate);
+      $("clear-source").addEventListener("click", clearSource);
+      $("generate").addEventListener("click", generate);
       $("download-ply").addEventListener("click", () => download("ply"));
       $("download-splat").addEventListener("click", () => download("splat"));
-      $("strip-refresh").addEventListener("click", () => refreshOutputs());
-      $("strip-prev").addEventListener("click", () => selectOutputRun(state.selectedOutputIndex - 1));
-      $("strip-next").addEventListener("click", () => selectOutputRun(state.selectedOutputIndex + 1));
-      $("output-picker").addEventListener("change", (event) => selectOutputRun(Number(event.target.value)));
-      $("gallery").addEventListener("wheel", (event) => {
-        if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
-          event.currentTarget.scrollLeft += event.deltaY;
-          event.preventDefault();
-        }
-      }, { passive: false });
+      $("refresh-gallery").addEventListener("click", () => refreshOutputs());
+      $("open-outputs").addEventListener("click", () => moduleAction("open_outputs"));
+      $("strip-prev").addEventListener("click", () => selectFromVisible(-1));
+      $("strip-next").addEventListener("click", () => selectFromVisible(1));
+      $("output-folder").addEventListener("change", () => {
+        state.outputView = $("output-folder").value;
+        renderGallery();
+      });
+      $("gallery").addEventListener("wheel", scrollGalleryWithWheel, { passive: false });
       refreshServerInfo();
       refreshOutputs();
-      setProgress("Idle", "Idle", 0, "Waiting for source image.");
-      updateActionState();
+      setProgress("Idle", "Waiting for source image.", 0);
+      updateButtons();
     }
 
     init();

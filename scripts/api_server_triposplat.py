@@ -180,7 +180,6 @@ def server_info() -> dict[str, Any]:
         "status": "ready",
         "backend": "TripoSplat",
         "output_formats": ["ply", "splat"],
-        "mesh_formats": [],
         "models_ready": _models_ready(),
         "missing_models": _missing_models(),
         "ckpt_dir": str(_ckpt_dir()),
