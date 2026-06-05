@@ -276,17 +276,15 @@ async def generate(request: Request) -> JSONResponse:
             prepared_path = run_dir / "prepared.webp"
             prepared.save(prepared_path)
             outputs: dict[str, Path] = {}
+            ply_path = run_dir / "splat.ply"
+            gaussian.save_ply(str(ply_path))
+            preview_path = ply_path
             if output_format in {"ply", "both"}:
-                ply_path = run_dir / "splat.ply"
-                gaussian.save_ply(str(ply_path))
                 outputs["ply"] = ply_path
             if output_format in {"splat", "both"}:
                 splat_path = run_dir / "splat.splat"
                 gaussian.save_splat(str(splat_path))
                 outputs["splat"] = splat_path
-            preview_path = outputs.get("splat") or outputs.get("ply")
-            if preview_path is None:
-                raise RuntimeError("No splat output was saved.")
             meta_path = run_dir / "metadata.json"
             meta_path.write_text(
                 json.dumps(
