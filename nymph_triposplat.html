@@ -147,7 +147,7 @@
 
     .command-deck { display: grid; gap: 7px; margin-top: 10px; }
     .command-row { display: grid; gap: 7px; align-items: stretch; }
-    .source-tools { grid-template-columns: 1fr 1fr; }
+    .source-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .export-tools { grid-template-columns: 1fr 1fr; }
     .btn {
       min-height: 28px;
@@ -202,9 +202,14 @@
       min-width: 0;
       height: 30px;
       min-height: 30px;
+      box-sizing: border-box;
       padding: 3px 8px;
       font-size: 9.8px;
       text-align: center;
+    }
+    .source-tools .btn {
+      display: flex;
+      max-width: 100%;
     }
 
     label {
@@ -476,7 +481,7 @@
         <div class="command-deck">
           <div class="command-row source-tools">
             <label class="btn" id="pick-source" for="source-file">Pick Image</label>
-            <button class="btn danger" id="clear-source" type="button" disabled>Clear</button>
+            <button class="btn" id="clear-source" type="button" disabled>Clear</button>
           </div>
           <div class="command-row">
             <button class="btn primary" id="generate" type="button" disabled>Generate Splat</button>
@@ -538,8 +543,9 @@
         </div>
         <input id="local-splat-file" class="source-file-input" type="file" accept=".splat,.ply">
         <div class="command-deck">
-          <div class="command-row">
-            <label class="btn" id="load-splat" for="local-splat-file">Load Splat</label>
+          <div class="command-row export-tools">
+            <label class="btn" id="load-splat" for="local-splat-file">Load File</label>
+            <button class="btn" id="open-outputs" type="button">Open Outputs</button>
           </div>
           <div class="command-row export-tools">
             <button class="btn" id="download-ply" type="button" disabled>PLY</button>
@@ -651,6 +657,16 @@
       return raw || "Unexpected error.";
     }
 
+    function escapeHtml(value) {
+      return String(value || "").replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;",
+      }[char]));
+    }
+
     function updateSliderLabels() {
       $("steps-value").textContent = $("steps").value;
       $("guidance-value").textContent = Number($("guidance").value).toFixed(1);
@@ -669,6 +685,7 @@
       $("download-splat").disabled = !state.lastOutputs.splat;
       $("load-splat").classList.toggle("disabled", state.busy);
       $("load-splat").setAttribute("aria-disabled", state.busy ? "true" : "false");
+      $("open-outputs").disabled = state.busy;
     }
 
     function fileToDataUrl(file) {
@@ -759,11 +776,30 @@
       state.splat = null;
     }
 
-    async function loadSplat(url, label) {
+    function splatFileType(nameOrUrl) {
+      const lower = String(nameOrUrl || "").split("?", 1)[0].toLowerCase();
+      if (lower.endsWith(".ply")) return "ply";
+      if (lower.endsWith(".splat")) return "splat";
+      return undefined;
+    }
+
+    async function loadSplat(url, label, fileName = "") {
       if (!url) return;
       await initViewer();
       clearSplat();
-      const splat = new SplatMesh({ url });
+      const splat = new SplatMesh({
+        url,
+        fileName: fileName || label || url,
+        fileType: splatFileType(fileName || url),
+        onProgress: (progress) => {
+          if (progress?.total) {
+            const loadedMb = (Number(progress.loaded || 0) / 1024 / 1024).toFixed(1);
+            const totalMb = (Number(progress.total || 0) / 1024 / 1024).toFixed(1);
+            $("viewer-hud").innerHTML = `<span class="pill">Loading ${loadedMb}/${totalMb} MB</span>`;
+          }
+        },
+      });
+      await splat.initialized;
       const root = new THREE.Group();
       root.add(splat);
       splat.rotation.y = Math.PI / 2;
@@ -788,14 +824,16 @@
       }, 900);
     }
 
-    async function tryLoadSplat(url, label) {
+    async function tryLoadSplat(url, label, fileName = "") {
       try {
-        await loadSplat(url, label);
+        await loadSplat(url, label, fileName);
         return true;
       } catch (err) {
         console.error(err);
-        $("viewer-hud").innerHTML = `<span class="pill">Preview viewer could not load.</span>`;
-        toast("Preview viewer could not load.");
+        const message = errorText(err);
+        $("viewer-hud").innerHTML = `<span class="pill">Preview failed: ${escapeHtml(message)}</span>`;
+        setProgress("Preview failed", message, 100);
+        toast("Preview failed. Output files were still saved.");
         return false;
       }
     }
@@ -814,7 +852,7 @@
       $("output-label").textContent = name;
       setStatus("Previewing local splat", "ready");
       setProgress("Preview", "Loaded local splat file.", 100);
-      await tryLoadSplat(state.localSplatObjectUrl, name);
+      await tryLoadSplat(state.localSplatObjectUrl, name, name);
       updateButtons();
     }
 
@@ -887,7 +925,7 @@
         $("output-state").textContent = result.run_id || "saved";
         $("output-label").textContent = result.run_id || "Splat ready";
         if (result.preview?.url) {
-          await tryLoadSplat(result.preview.url, `${result.num_gaussians.toLocaleString()} gaussians`);
+          await tryLoadSplat(result.preview.url, `${result.num_gaussians.toLocaleString()} gaussians`, result.preview.name);
         }
         setStatus("Splat ready", "ready");
         stopProgress(true, "Saved TripoSplat splat outputs.");
@@ -967,6 +1005,7 @@
       });
       $("download-ply").addEventListener("click", () => download("ply"));
       $("download-splat").addEventListener("click", () => download("splat"));
+      $("open-outputs").addEventListener("click", () => moduleAction("open_outputs"));
       refreshServerInfo();
       setProgress("Idle", "Waiting for source image.", 0);
       updateButtons();
