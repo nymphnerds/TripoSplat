@@ -84,6 +84,11 @@
       color: var(--muted);
       font-size: 12px;
       line-height: 1.35;
+      max-width: 160px;
+      overflow: hidden;
+      text-align: right;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .drop {
@@ -142,7 +147,7 @@
 
     .command-deck { display: grid; gap: 7px; margin-top: 10px; }
     .command-row { display: grid; gap: 7px; align-items: stretch; }
-    .source-tools { grid-template-columns: 1.22fr 0.78fr; }
+    .source-tools { grid-template-columns: 1fr 1fr; }
     .export-tools { grid-template-columns: 1fr 1fr; }
     .btn {
       min-height: 28px;
@@ -393,19 +398,6 @@
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .model-line {
-      min-width: 0;
-      overflow: hidden;
-      color: var(--dim);
-      font-size: 10.5px;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-    }
-    .model-line span:first-child {
-      color: var(--teal);
-      font-weight: 900;
-      text-transform: uppercase;
-    }
     .progress-line {
       display: grid;
       grid-template-columns: 160px minmax(0, 1fr) 86px;
@@ -440,134 +432,6 @@
       background: linear-gradient(90deg, var(--teal), var(--lime), var(--amber));
       transition: width 0.22s ease;
     }
-    .strip-head {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 10px;
-      align-items: center;
-      margin-top: 6px;
-      margin-bottom: 6px;
-    }
-    .strip-title {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-      color: var(--muted);
-      font-family: Consolas, monospace;
-      font-weight: 900;
-      text-transform: uppercase;
-    }
-    .strip-title span:first-child { color: var(--lime); }
-    .strip-title span:last-child {
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      color: var(--teal);
-    }
-    .strip-controls,
-    .strip-select-actions {
-      display: flex;
-      align-items: center;
-      flex-wrap: nowrap;
-      gap: 6px;
-      min-width: 0;
-      white-space: nowrap;
-    }
-    .strip-controls button,
-    .strip-select-actions button {
-      min-height: 28px;
-      padding: 0 9px;
-      border: 1px solid var(--line-2);
-      border-radius: 5px;
-      color: var(--teal);
-      background: rgba(15, 26, 28, 0.85);
-      cursor: pointer;
-      font-family: var(--font-mono);
-      font-size: 9.8px;
-      font-weight: 900;
-    }
-    .strip-controls button:disabled,
-    .strip-select-actions button:disabled {
-      opacity: 0.45;
-      cursor: default;
-    }
-    .strip-browser {
-      display: grid;
-      grid-template-columns: minmax(220px, 1fr) auto;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    .folder-select {
-      height: 28px;
-      font-size: 11px;
-      font-family: var(--font-mono);
-    }
-    .gallery {
-      display: grid;
-      grid-auto-flow: column;
-      grid-auto-columns: 124px;
-      gap: 8px;
-      overflow-x: auto;
-      overscroll-behavior-inline: contain;
-      min-height: 0;
-    }
-    .gallery.empty-gallery {
-      grid-auto-flow: row;
-      grid-auto-columns: unset;
-      grid-template-columns: 1fr;
-      min-height: 76px;
-    }
-    .strip-empty {
-      min-height: 74px;
-      display: grid;
-      place-items: center;
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 8px;
-      background: rgba(8, 16, 15, 0.8);
-      color: var(--muted);
-      font-family: var(--font-mono);
-      font-size: 11px;
-      font-weight: 900;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-    .thumb {
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 8px;
-      background: #08100f;
-      padding: 5px;
-      display: grid;
-      grid-template-rows: 60px auto;
-      gap: 5px;
-      cursor: pointer;
-      min-width: 0;
-    }
-    .thumb.selected { border-color: var(--lime); }
-    .thumb img,
-    .thumb .thumb-fallback {
-      width: 100%;
-      height: 60px;
-      object-fit: contain;
-      object-position: center center;
-      border-radius: 5px;
-      background: #020403;
-    }
-    .thumb .thumb-fallback {
-      display: grid;
-      place-items: center;
-      color: var(--muted);
-      font-size: 10px;
-    }
-    .thumb span {
-      color: var(--muted);
-      font-size: 11px;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-    }
-    .thumb.selected span { color: var(--lime); }
     .toast {
       position: fixed;
       left: 50%;
@@ -593,8 +457,6 @@
       .sidebar { height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
       .stage { height: 78vh; min-height: 560px; }
       .progress-line { grid-template-columns: 100px minmax(0, 1fr) 54px; }
-      .strip-browser { grid-template-columns: 1fr; }
-      .strip-select-actions { overflow-x: auto; }
     }
   </style>
 </head>
@@ -674,7 +536,11 @@
           <div class="status-line"><span>Pipeline</span><strong id="pipeline-state">not loaded</strong></div>
           <div class="status-line"><span>Last output</span><strong id="output-state">none</strong></div>
         </div>
+        <input id="local-splat-file" class="source-file-input" type="file" accept=".splat,.ply">
         <div class="command-deck">
+          <div class="command-row">
+            <label class="btn" id="load-splat" for="local-splat-file">Load Splat</label>
+          </div>
           <div class="command-row export-tools">
             <button class="btn" id="download-ply" type="button" disabled>PLY</button>
             <button class="btn" id="download-splat" type="button" disabled>SPLAT</button>
@@ -699,28 +565,12 @@
           <span id="runtime-text">TripoSplat</span>
           <span id="output-label">No output</span>
         </div>
-        <div class="model-line"><span>Preview</span> <span id="selected-output-text">PLY / SPLAT</span></div>
         <div class="progress-line">
           <span class="progress-stage" id="progress-stage">Idle</span>
           <span id="progress-detail">Waiting for source image.</span>
           <span id="progress-percent">0%</span>
         </div>
         <div class="bar"><span id="progress-bar"></span></div>
-        <div class="strip-head">
-          <div class="strip-title"><span>Browse</span><span id="strip-label">Recent splats (0)</span></div>
-          <div class="strip-controls">
-            <button id="strip-prev" type="button" title="Previous output">&lt;</button>
-            <button id="strip-next" type="button" title="Next output">&gt;</button>
-          </div>
-        </div>
-        <div class="strip-browser">
-          <select class="folder-select" id="output-folder" aria-label="Output folder"></select>
-          <div class="strip-select-actions">
-            <button id="refresh-gallery" type="button">Refresh</button>
-            <button id="open-outputs" type="button">Open Outputs</button>
-          </div>
-        </div>
-        <div class="gallery" id="gallery"></div>
       </section>
     </section>
   </main>
@@ -755,18 +605,15 @@
       spark: null,
       splatRoot: null,
       splat: null,
-      outputs: [],
-      visibleOutputs: [],
-      outputView: "recent",
-      selectedOutput: null,
+      localSplatObjectUrl: "",
       lastOutputs: {},
     };
 
     async function ensureViewerLibs() {
       if (THREE && OrbitControls && SparkRenderer && SplatMesh) return;
-      const threeModule = await import("three");
-      const controlsModule = await import("three/addons/controls/OrbitControls.js");
-      const sparkModule = await import("@sparkjsdev/spark");
+      const threeModule = await import("/assets/vendor/three.module.js");
+      const controlsModule = await import("/assets/vendor/three-addons/controls/OrbitControls.js");
+      const sparkModule = await import("/assets/vendor/spark.module.js");
       THREE = threeModule;
       OrbitControls = controlsModule.OrbitControls;
       SparkRenderer = sparkModule.SparkRenderer;
@@ -820,10 +667,8 @@
       $("generate").disabled = state.busy || !hasSource;
       $("download-ply").disabled = !state.lastOutputs.ply;
       $("download-splat").disabled = !state.lastOutputs.splat;
-      $("strip-prev").disabled = state.visibleOutputs.length < 2;
-      $("strip-next").disabled = state.visibleOutputs.length < 2;
-      $("refresh-gallery").disabled = state.busy;
-      $("output-folder").disabled = state.outputs.length === 0;
+      $("load-splat").classList.toggle("disabled", state.busy);
+      $("load-splat").setAttribute("aria-disabled", state.busy ? "true" : "false");
     }
 
     function fileToDataUrl(file) {
@@ -943,6 +788,36 @@
       }, 900);
     }
 
+    async function tryLoadSplat(url, label) {
+      try {
+        await loadSplat(url, label);
+        return true;
+      } catch (err) {
+        console.error(err);
+        $("viewer-hud").innerHTML = `<span class="pill">Preview viewer could not load.</span>`;
+        toast("Preview viewer could not load.");
+        return false;
+      }
+    }
+
+    async function loadLocalSplatFile(file) {
+      if (!file || state.busy) return;
+      const name = file.name || "local splat";
+      const lower = name.toLowerCase();
+      if (!lower.endsWith(".splat") && !lower.endsWith(".ply")) {
+        toast("Choose a .splat or .ply file.");
+        return;
+      }
+      if (state.localSplatObjectUrl) URL.revokeObjectURL(state.localSplatObjectUrl);
+      state.localSplatObjectUrl = URL.createObjectURL(file);
+      $("output-state").textContent = name;
+      $("output-label").textContent = name;
+      setStatus("Previewing local splat", "ready");
+      setProgress("Preview", "Loaded local splat file.", 100);
+      await tryLoadSplat(state.localSplatObjectUrl, name);
+      updateButtons();
+    }
+
     async function refreshServerInfo() {
       try {
         const response = await fetch("/server_info", { cache: "no-store" });
@@ -953,182 +828,6 @@
       } catch {
         $("model-state").textContent = "unknown";
       }
-    }
-
-    function outputKey(output) {
-      return output?.id || output?.relative_path || output?.url || "";
-    }
-
-    function outputDateKey(output) {
-      const modified = Number(output?.modified || 0);
-      if (!modified) return "Unknown Date";
-      const date = new Date(modified * 1000);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0");
-      const day = String(date.getDate()).padStart(2, "0");
-      return `${year}-${month}-${day}`;
-    }
-
-    function outputLabel(output) {
-      return output?.id?.replace(/^triposplat_/, "") || output?.id || "Splat";
-    }
-
-    function previewOutput(output) {
-      return output?.outputs?.splat || output?.outputs?.ply || null;
-    }
-
-    function groupOutputRuns(files) {
-      const runs = new Map();
-      for (const file of files || []) {
-        const segments = String(file.relative_path || "").split("/");
-        if (segments.length < 2) continue;
-        const runId = segments[0];
-        const name = segments[segments.length - 1].toLowerCase();
-        const run = runs.get(runId) || {
-          id: runId,
-          modified: 0,
-          outputs: {},
-          thumbnail: null,
-          metadata: null,
-        };
-        run.modified = Math.max(run.modified, Number(file.modified || 0));
-        if (name.endsWith(".ply")) run.outputs.ply = file;
-        if (name.endsWith(".splat")) run.outputs.splat = file;
-        if (name.endsWith(".webp")) run.thumbnail = file;
-        if (name.endsWith(".json")) run.metadata = file;
-        runs.set(runId, run);
-      }
-      return Array.from(runs.values())
-        .filter((run) => run.outputs.ply || run.outputs.splat)
-        .sort((a, b) => b.modified - a.modified)
-        .slice(0, 80);
-    }
-
-    function syncOutputViewOptions(outputs) {
-      const select = $("output-folder");
-      const dates = [...new Set(outputs.map(outputDateKey))].sort().reverse();
-      const validViews = new Set(["recent", ...dates.map((date) => `date:${date}`)]);
-      if (!validViews.has(state.outputView)) state.outputView = "recent";
-      select.innerHTML = "";
-      const recent = document.createElement("option");
-      recent.value = "recent";
-      recent.textContent = `Recent (${outputs.length})`;
-      select.appendChild(recent);
-      for (const date of dates) {
-        const count = outputs.filter((output) => outputDateKey(output) === date).length;
-        const option = document.createElement("option");
-        option.value = `date:${date}`;
-        option.textContent = `${date} (${count})`;
-        select.appendChild(option);
-      }
-      select.value = state.outputView;
-    }
-
-    function visibleOutputs() {
-      syncOutputViewOptions(state.outputs);
-      if (state.outputView === "recent") return state.outputs;
-      if (state.outputView.startsWith("date:")) {
-        const date = state.outputView.slice(5);
-        return state.outputs.filter((output) => outputDateKey(output) === date);
-      }
-      return state.outputs;
-    }
-
-    function currentOutputViewLabel() {
-      if (state.outputView === "recent") return "Recent splats";
-      if (state.outputView.startsWith("date:")) return state.outputView.slice(5);
-      return "Splats";
-    }
-
-    function showOutput(output, load = true) {
-      if (!output) return;
-      state.selectedOutput = output;
-      state.lastOutputs = output.outputs || {};
-      const preview = previewOutput(output);
-      $("output-state").textContent = output.id;
-      $("output-label").textContent = output.id;
-      $("selected-output-text").textContent = [
-        output.outputs?.ply ? "PLY" : "",
-        output.outputs?.splat ? "SPLAT" : "",
-      ].filter(Boolean).join(" / ") || "PLY / SPLAT";
-      if (load && preview) void loadSplat(preview.url, output.id);
-      for (const node of document.querySelectorAll(".thumb")) {
-        node.classList.toggle("selected", node.dataset.key === outputKey(output));
-      }
-      updateButtons();
-    }
-
-    function renderGallery() {
-      const gallery = $("gallery");
-      gallery.innerHTML = "";
-      state.visibleOutputs = visibleOutputs();
-      const label = currentOutputViewLabel();
-      $("strip-label").textContent = `${label} (${state.visibleOutputs.length})`;
-      gallery.classList.toggle("empty-gallery", state.visibleOutputs.length === 0);
-      if (state.visibleOutputs.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "strip-empty";
-        empty.textContent = "No generated splats yet";
-        gallery.appendChild(empty);
-        updateButtons();
-        return;
-      }
-      for (const output of state.visibleOutputs) {
-        const node = document.createElement("button");
-        node.className = "thumb";
-        node.type = "button";
-        node.dataset.key = outputKey(output);
-        if (state.selectedOutput && outputKey(state.selectedOutput) === outputKey(output)) node.classList.add("selected");
-        if (output.thumbnail) {
-          const img = document.createElement("img");
-          img.src = output.thumbnail.url;
-          img.alt = "";
-          node.appendChild(img);
-        } else {
-          const fallback = document.createElement("div");
-          fallback.className = "thumb-fallback";
-          fallback.textContent = output.outputs?.splat ? "SPLAT" : "PLY";
-          node.appendChild(fallback);
-        }
-        const text = document.createElement("span");
-        text.textContent = outputLabel(output);
-        node.appendChild(text);
-        node.addEventListener("click", () => showOutput(output));
-        gallery.appendChild(node);
-      }
-      if (!state.selectedOutput && state.visibleOutputs[0]) showOutput(state.visibleOutputs[0], false);
-      updateButtons();
-    }
-
-    async function refreshOutputs(selectRunId = "") {
-      try {
-        const response = await fetch("/api/outputs", { cache: "no-store" });
-        const data = await response.json();
-        state.outputs = groupOutputRuns(data.outputs);
-        renderGallery();
-        const selected = state.outputs.find((output) => output.id === selectRunId);
-        if (selected) showOutput(selected, false);
-      } catch {
-        renderGallery();
-      }
-    }
-
-    function selectFromVisible(offset) {
-      if (!state.visibleOutputs.length) return;
-      const current = state.visibleOutputs.findIndex((output) => outputKey(output) === outputKey(state.selectedOutput));
-      const next = current < 0 ? 0 : (current + offset + state.visibleOutputs.length) % state.visibleOutputs.length;
-      showOutput(state.visibleOutputs[next]);
-    }
-
-    function scrollGalleryWithWheel(event) {
-      const gallery = $("gallery");
-      if (!gallery || gallery.scrollWidth <= gallery.clientWidth) return;
-      const dominantY = Math.abs(event.deltaY) >= Math.abs(event.deltaX);
-      const delta = dominantY ? event.deltaY : event.deltaX;
-      if (!delta) return;
-      const multiplier = event.deltaMode === 1 ? 32 : event.deltaMode === 2 ? gallery.clientWidth : 1;
-      event.preventDefault();
-      gallery.scrollLeft += delta * multiplier;
     }
 
     async function pollTask() {
@@ -1187,12 +886,11 @@
         state.lastOutputs = result.outputs || {};
         $("output-state").textContent = result.run_id || "saved";
         $("output-label").textContent = result.run_id || "Splat ready";
-        await loadSplat(result.preview.url, `${result.num_gaussians.toLocaleString()} gaussians`);
+        if (result.preview?.url) {
+          await tryLoadSplat(result.preview.url, `${result.num_gaussians.toLocaleString()} gaussians`);
+        }
         setStatus("Splat ready", "ready");
         stopProgress(true, "Saved TripoSplat splat outputs.");
-        await refreshOutputs(result.run_id || "");
-        const selected = state.outputs.find((output) => output.id === result.run_id);
-        if (selected) showOutput(selected, false);
       } catch (err) {
         console.error(err);
         setStatus("Generation failed", "err");
@@ -1262,19 +960,14 @@
       }
       $("clear-source").addEventListener("click", clearSource);
       $("generate").addEventListener("click", generate);
+      $("local-splat-file").addEventListener("change", (event) => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+        loadLocalSplatFile(file);
+      });
       $("download-ply").addEventListener("click", () => download("ply"));
       $("download-splat").addEventListener("click", () => download("splat"));
-      $("refresh-gallery").addEventListener("click", () => refreshOutputs());
-      $("open-outputs").addEventListener("click", () => moduleAction("open_outputs"));
-      $("strip-prev").addEventListener("click", () => selectFromVisible(-1));
-      $("strip-next").addEventListener("click", () => selectFromVisible(1));
-      $("output-folder").addEventListener("change", () => {
-        state.outputView = $("output-folder").value;
-        renderGallery();
-      });
-      $("gallery").addEventListener("wheel", scrollGalleryWithWheel, { passive: false });
       refreshServerInfo();
-      refreshOutputs();
       setProgress("Idle", "Waiting for source image.", 0);
       updateButtons();
     }

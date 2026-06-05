@@ -3,7 +3,7 @@
   "id": "triposplat",
   "name": "TripoSplat",
   "short_name": "TS",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "TripoSplat generates Gaussian splats from a single image and previews .ply / .splat outputs in the Manager.",
   "category": "3d",
   "kind": "3d",
