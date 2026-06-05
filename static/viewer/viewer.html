@@ -49,9 +49,9 @@
 <script type="importmap">
 {
   "imports": {
-    "three": "/assets/vendor/three.module.js?v=0.1.11",
+    "three": "/assets/vendor/three.module.js?v=0.1.12",
     "three/addons/": "/assets/vendor/three-addons/",
-    "@sparkjsdev/spark": "/assets/vendor/spark.module.js?v=0.1.11"
+    "@sparkjsdev/spark": "/assets/vendor/spark.module.js?v=0.1.12"
   }
 }
 </script>
@@ -152,9 +152,8 @@ function init(url) {
   });
 
   splat.initialized
-    .then(async () => {
+    .then(() => {
       frameSplat();
-      await spark.update({ scene, camera });
     })
     .catch((err) => showError(`Preview failed: ${err?.message || err}`));
 
@@ -166,7 +165,7 @@ function init(url) {
 
   renderer.setAnimationLoop(() => {
     controls.update();
-    spark.render(scene, camera);
+    renderer.render(scene, camera);
   });
 }
 </script>

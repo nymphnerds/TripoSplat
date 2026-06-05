@@ -300,7 +300,6 @@ async def generate(request: Request) -> JSONResponse:
                 splat_path = run_dir / "splat.splat"
                 gaussian.save_splat(str(splat_path))
                 outputs["splat"] = splat_path
-                preview_path = splat_path
             meta_path = run_dir / "metadata.json"
             meta_path.write_text(
                 json.dumps(

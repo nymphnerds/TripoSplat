@@ -626,7 +626,7 @@
       lastOutputs: {},
     };
 
-    const VIEWER_ASSET_VERSION = "0.1.11";
+    const VIEWER_ASSET_VERSION = "0.1.12";
 
     async function ensureViewerLibs() {
       if (THREE && OrbitControls && SparkRenderer && SplatMesh) return;
@@ -770,7 +770,7 @@
       state.spark = spark;
       renderer.setAnimationLoop(() => {
         controls.update();
-        spark.render(scene, camera);
+        renderer.render(scene, camera);
       });
       window.addEventListener("resize", resizeViewer);
     }
@@ -799,7 +799,7 @@
       return undefined;
     }
 
-    async function frameSplatMesh(splat, root) {
+    function frameSplatMesh(splat, root) {
       if (!splat || !root || !state.camera || !state.controls || !state.spark) return;
       root.updateMatrixWorld(true);
       const box = splat.getBoundingBox(false);
@@ -824,7 +824,6 @@
       state.camera.updateProjectionMatrix();
       state.controls.target.copy(center);
       state.controls.update();
-      await state.spark.update({ scene: state.scene, camera: state.camera });
     }
 
     async function loadSplat(url, label, fileName = "") {
@@ -862,7 +861,7 @@
       state.splat = splat;
       $("viewer-hud").innerHTML = `<span class="pill">Loading ${escapeHtml(label)}</span>`;
       await splat.initialized;
-      await frameSplatMesh(splat, root);
+      frameSplatMesh(splat, root);
       $("empty").style.display = "none";
       $("viewer-hud").innerHTML = `<span class="pill">${escapeHtml(label)}</span>`;
     }
