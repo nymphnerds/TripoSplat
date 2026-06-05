@@ -121,6 +121,15 @@
       font-size: 13px;
     }
     .drop-hint svg { width: 30px; height: 30px; color: var(--muted); }
+    .file-input {
+      position: fixed;
+      left: -10000px;
+      top: 0;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
     .command-deck { display: grid; gap: 7px; margin-top: 10px; }
     .command-row { display: grid; gap: 7px; align-items: stretch; }
     .source-tools { grid-template-columns: 1.22fr 0.78fr; }
@@ -243,7 +252,7 @@
     .dot.ready { background: var(--lime); box-shadow: 0 0 18px rgba(151, 223, 72, 0.45); }
     .dot.work { background: var(--teal); box-shadow: 0 0 18px rgba(41, 230, 218, 0.5); }
     .dot.err { background: var(--danger); box-shadow: 0 0 18px rgba(255, 94, 108, 0.45); }
-    .workspace { min-height: 0; flex: 1; display: grid; grid-template-rows: minmax(0, 1fr) auto; }
+    .workspace { min-height: 0; flex: 1; display: grid; grid-template-rows: minmax(0, 1fr) auto auto; }
     .viewer-shell {
       position: relative;
       min-height: 0;
@@ -293,7 +302,8 @@
     .top-progress {
       min-height: 54px;
       display: grid;
-      grid-template-columns: auto auto minmax(120px, 1fr) minmax(120px, 28%);
+      grid-template-columns: auto auto minmax(120px, 1fr);
+      grid-template-rows: auto 7px;
       align-items: center;
       gap: 10px;
       padding: 10px 16px 12px;
@@ -311,6 +321,7 @@
     .top-progress-extra { color: var(--muted); font-size: 10px; }
     .bar {
       position: relative;
+      grid-column: 1 / -1;
       height: 7px;
       overflow: hidden;
       border-radius: 99px;
@@ -325,6 +336,103 @@
       background: linear-gradient(90deg, var(--teal), var(--lime));
       transition: width 180ms ease;
     }
+    .output-strip {
+      min-height: 104px;
+      display: grid;
+      gap: 7px;
+      padding: 8px 16px 10px;
+      border-top: 1px solid var(--line);
+      background: rgba(8, 17, 18, 0.92);
+      font-family: var(--font-mono);
+    }
+    .strip-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 850;
+    }
+    .strip-title { display: flex; gap: 8px; min-width: 0; overflow: hidden; }
+    .strip-title span:first-child { color: var(--lime); text-transform: uppercase; }
+    .strip-title span:last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .strip-controls { display: flex; gap: 6px; }
+    .strip-controls button {
+      width: 28px;
+      height: 24px;
+      border: 1px solid var(--line-2);
+      border-radius: 5px;
+      color: var(--teal);
+      background: rgba(15, 26, 28, 0.85);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-weight: 900;
+    }
+    .strip-controls button:disabled { opacity: 0.4; cursor: default; }
+    .strip-browser {
+      display: grid;
+      grid-template-columns: minmax(180px, 280px) minmax(0, 1fr);
+      gap: 8px;
+      align-items: stretch;
+    }
+    .folder-select {
+      height: 28px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+    }
+    .gallery {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: 124px;
+      gap: 8px;
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      min-height: 0;
+    }
+    .gallery:empty::before {
+      content: "No generated splats yet.";
+      display: grid;
+      place-items: center;
+      height: 70px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .thumb {
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 8px;
+      background: #08100f;
+      padding: 5px;
+      display: grid;
+      grid-template-rows: 60px auto;
+      gap: 5px;
+      cursor: pointer;
+      min-width: 0;
+    }
+    .thumb img,
+    .thumb .thumb-fallback {
+      width: 100%;
+      height: 60px;
+      object-fit: contain;
+      object-position: center center;
+      border-radius: 5px;
+      background: #020403;
+    }
+    .thumb .thumb-fallback {
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 10px;
+    }
+    .thumb span {
+      color: var(--muted);
+      font-size: 10px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .thumb.selected { border-color: var(--lime); }
+    .thumb.selected span { color: var(--lime); }
     .toast {
       position: fixed;
       left: 50%;
@@ -349,6 +457,7 @@
       .stage { height: 78vh; min-height: 560px; }
       .top-progress { grid-template-columns: auto auto minmax(0, 1fr); }
       .top-progress .bar { grid-column: 1 / -1; }
+      .strip-browser { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -364,7 +473,7 @@
           <img id="source-preview" alt="">
           <div class="drop-hint" id="drop-hint"><i data-lucide="image-plus"></i><span>Drop image</span></div>
         </div>
-        <input id="file-input" type="file" accept="image/*" hidden>
+        <input id="file-input" class="file-input" type="file" accept="image/*">
         <div class="command-deck">
           <div class="command-row source-tools">
             <button class="btn" id="pick-btn" type="button">Pick Image</button>
@@ -399,11 +508,6 @@
             <option value="262144" selected>262144</option>
           </select>
         </label>
-        <div class="command-deck">
-          <div class="command-row">
-            <button class="btn" id="warm-btn" type="button">Warm Up</button>
-          </div>
-        </div>
       </section>
 
       <section class="section">
@@ -430,7 +534,7 @@
         <h2 class="section-title">Status</h2>
         <div class="status-card">
           <div class="status-line"><span>Model files</span><strong id="model-state">checking</strong></div>
-          <div class="status-line"><span>Pipeline</span><strong id="pipeline-state">cold</strong></div>
+          <div class="status-line"><span>Pipeline</span><strong id="pipeline-state">not loaded</strong></div>
           <div class="status-line"><span>Last output</span><strong id="output-state">none</strong></div>
         </div>
         <div class="command-deck">
@@ -452,6 +556,20 @@
           <div class="empty" id="empty"><i data-lucide="sparkles"></i><div>Generated splat appears here.</div></div>
           <div class="viewer-hud" id="viewer-hud"></div>
         </div>
+        <section class="output-strip" aria-label="Generated splat browser">
+          <div class="strip-head">
+            <div class="strip-title"><span>Browse</span><span id="strip-label">Recent splats (0)</span></div>
+            <div class="strip-controls">
+              <button id="strip-prev" type="button" title="Previous output">&lt;</button>
+              <button id="strip-next" type="button" title="Next output">&gt;</button>
+              <button id="strip-refresh" type="button" title="Refresh outputs">R</button>
+            </div>
+          </div>
+          <div class="strip-browser">
+            <select class="folder-select" id="output-picker" aria-label="Output run"></select>
+            <div class="gallery" id="gallery"></div>
+          </div>
+        </section>
         <div class="top-progress">
           <i class="top-progress-icon" data-lucide="activity"></i>
           <span class="top-progress-stage" id="progress-stage">Idle</span>
@@ -491,6 +609,8 @@
       spark: null,
       camera: null,
       lastOutputs: {},
+      outputRuns: [],
+      selectedOutputIndex: -1,
     };
 
     function toast(message) {
@@ -511,6 +631,18 @@
       $("progress-text").textContent = detail;
       $("progress-extra").textContent = extra;
       $("progress-bar").style.width = `${Math.max(0, Math.min(100, Number(percent) || 0))}%`;
+    }
+
+    function updateActionState() {
+      $("pick-btn").disabled = state.busy;
+      $("clear-btn").disabled = state.busy || !state.imageData;
+      $("generate-btn").disabled = state.busy || !state.imageData;
+      $("strip-prev").disabled = state.busy || state.outputRuns.length < 2;
+      $("strip-next").disabled = state.busy || state.outputRuns.length < 2;
+      $("strip-refresh").disabled = state.busy;
+      $("output-picker").disabled = state.busy || state.outputRuns.length === 0;
+      $("download-ply").disabled = !state.lastOutputs.ply;
+      $("download-splat").disabled = !state.lastOutputs.splat;
     }
 
     function updateSliderLabels() {
@@ -542,6 +674,10 @@
 
     async function setSource(file) {
       if (!file) return;
+      if (!file.type?.startsWith("image/")) {
+        toast("Choose an image file.");
+        return;
+      }
       state.file = file;
       state.imageData = await readFile(file);
       $("source-label").textContent = file.name;
@@ -550,6 +686,31 @@
       $("drop-hint").style.display = "none";
       setStatus("Image ready", "ready");
       setProgress("Ready", "Source image selected.", 0, file.name);
+      updateActionState();
+    }
+
+    async function chooseSourceImage() {
+      if (state.busy) return;
+      if (window.showOpenFilePicker) {
+        try {
+          const [handle] = await window.showOpenFilePicker({
+            multiple: false,
+            types: [{
+              description: "Images",
+              accept: { "image/*": [".png", ".jpg", ".jpeg", ".webp", ".bmp"] },
+            }],
+          });
+          if (handle) {
+            await setSource(await handle.getFile());
+            return;
+          }
+        } catch (err) {
+          if (err?.name === "AbortError") return;
+        }
+      }
+      const input = $("file-input");
+      input.value = "";
+      input.click();
     }
 
     function clearSource() {
@@ -561,6 +722,7 @@
       $("drop-hint").style.display = "grid";
       setStatus("Waiting for image");
       setProgress("Idle", "Idle", 0, "Waiting for source image.");
+      updateActionState();
     }
 
     function initViewer() {
@@ -643,10 +805,127 @@
         const response = await fetch("/server_info", { cache: "no-store" });
         const info = await response.json();
         $("model-state").textContent = info.models_ready ? "ready" : "missing";
-        $("pipeline-state").textContent = info.pipeline_loaded ? "warm" : "cold";
+        $("pipeline-state").textContent = info.pipeline_loaded ? "loaded" : "not loaded";
         $("runtime-text").textContent = info.models_ready ? "models ready" : "fetch models";
       } catch {
         $("model-state").textContent = "unknown";
+      }
+    }
+
+    function outputRunLabel(run) {
+      if (!run) return "";
+      const date = new Date((run.modified || 0) * 1000);
+      const time = Number.isFinite(date.getTime()) ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+      return time ? `${run.id} - ${time}` : run.id;
+    }
+
+    function groupOutputRuns(files) {
+      const runs = new Map();
+      for (const file of files || []) {
+        const parts = String(file.relative_path || "").split("/");
+        if (parts.length < 2) continue;
+        const runId = parts[0];
+        const name = parts[parts.length - 1].toLowerCase();
+        const run = runs.get(runId) || {
+          id: runId,
+          label: runId,
+          modified: 0,
+          outputs: {},
+          thumbnail: null,
+          metadata: null,
+        };
+        run.modified = Math.max(run.modified, Number(file.modified || 0));
+        if (name.endsWith(".ply")) run.outputs.ply = file;
+        if (name.endsWith(".splat")) run.outputs.splat = file;
+        if (name.endsWith(".webp")) run.thumbnail = file;
+        if (name.endsWith(".json")) run.metadata = file;
+        runs.set(runId, run);
+      }
+      return Array.from(runs.values())
+        .filter((run) => run.outputs.ply || run.outputs.splat)
+        .sort((a, b) => b.modified - a.modified)
+        .slice(0, 80);
+    }
+
+    function renderOutputPicker() {
+      const picker = $("output-picker");
+      const gallery = $("gallery");
+      picker.innerHTML = "";
+      gallery.innerHTML = "";
+      $("strip-label").textContent = `Recent splats (${state.outputRuns.length})`;
+      if (!state.outputRuns.length) {
+        const option = document.createElement("option");
+        option.textContent = "No generated splats";
+        option.value = "";
+        picker.appendChild(option);
+        $("output-state").textContent = state.lastOutputs.ply || state.lastOutputs.splat ? $("output-state").textContent : "none";
+        updateActionState();
+        return;
+      }
+      for (const [index, run] of state.outputRuns.entries()) {
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = outputRunLabel(run);
+        picker.appendChild(option);
+
+        const button = document.createElement("button");
+        button.className = `thumb${index === state.selectedOutputIndex ? " selected" : ""}`;
+        button.type = "button";
+        button.title = run.id;
+        button.addEventListener("click", () => selectOutputRun(index));
+        if (run.thumbnail) {
+          const img = document.createElement("img");
+          img.src = run.thumbnail.url;
+          img.alt = "";
+          button.appendChild(img);
+        } else {
+          const fallback = document.createElement("div");
+          fallback.className = "thumb-fallback";
+          fallback.textContent = run.outputs.splat ? "SPLAT" : "PLY";
+          button.appendChild(fallback);
+        }
+        const label = document.createElement("span");
+        label.textContent = run.id.replace(/^triposplat_/, "");
+        button.appendChild(label);
+        gallery.appendChild(button);
+      }
+      if (state.selectedOutputIndex >= 0) picker.value = String(state.selectedOutputIndex);
+      updateActionState();
+    }
+
+    function selectOutputRun(index, load = true) {
+      if (!state.outputRuns.length) return;
+      const count = state.outputRuns.length;
+      const normalized = ((index % count) + count) % count;
+      const run = state.outputRuns[normalized];
+      state.selectedOutputIndex = normalized;
+      state.lastOutputs = run.outputs || {};
+      $("output-state").textContent = run.id;
+      if (load) {
+        const preview = run.outputs.ply || run.outputs.splat;
+        if (preview) loadSplat(preview.url, run.id);
+      }
+      renderOutputPicker();
+    }
+
+    async function refreshOutputs(selectRunId = "") {
+      try {
+        const response = await fetch("/api/outputs", { cache: "no-store" });
+        const data = await response.json();
+        state.outputRuns = groupOutputRuns(data.outputs);
+        let index = state.outputRuns.findIndex((run) => run.id === selectRunId);
+        if (index < 0 && state.selectedOutputIndex >= 0 && state.selectedOutputIndex < state.outputRuns.length) {
+          index = state.selectedOutputIndex;
+        }
+        if (index < 0 && state.outputRuns.length) index = 0;
+        if (index >= 0) {
+          selectOutputRun(index, false);
+        } else {
+          state.selectedOutputIndex = -1;
+          renderOutputPicker();
+        }
+      } catch {
+        renderOutputPicker();
       }
     }
 
@@ -671,29 +950,6 @@
       state.progressTimer = null;
     }
 
-    async function warmup() {
-      if (state.busy) return;
-      state.busy = true;
-      setStatus("Warming up", "work");
-      setProgress("Warm", "Loading TripoSplat models.", 12);
-      startProgressPolling();
-      try {
-        const response = await fetch("/api/warmup", { method: "POST" });
-        if (!response.ok) throw new Error(await response.text());
-        $("pipeline-state").textContent = "warm";
-        setStatus("Ready", "ready");
-        setProgress("Ready", "TripoSplat models loaded.", 0);
-      } catch (err) {
-        setStatus("Warm failed", "err");
-        setProgress("Failed", errorText(err), 0);
-        toast(errorText(err));
-      } finally {
-        state.busy = false;
-        stopProgressPolling();
-        refreshServerInfo();
-      }
-    }
-
     async function generate() {
       if (state.busy) return;
       if (!state.imageData) {
@@ -701,6 +957,7 @@
         return;
       }
       state.busy = true;
+      updateActionState();
       setStatus("Generating", "work");
       setProgress("Generate", "Sending TripoSplat request.", 8);
       startProgressPolling();
@@ -724,11 +981,10 @@
         const result = await response.json();
         state.lastOutputs = result.outputs || {};
         $("output-state").textContent = result.run_id || "saved";
-        $("download-ply").disabled = !state.lastOutputs.ply;
-        $("download-splat").disabled = !state.lastOutputs.splat;
         loadSplat(result.preview.url, `${result.num_gaussians.toLocaleString()} gaussians`);
         setStatus("Complete", "ready");
         setProgress("Complete", "Saved TripoSplat splat outputs.", 100, result.run_id || "");
+        await refreshOutputs(result.run_id || "");
       } catch (err) {
         setStatus("Generate failed", "err");
         setProgress("Failed", errorText(err), 0);
@@ -737,6 +993,7 @@
         state.busy = false;
         stopProgressPolling();
         refreshServerInfo();
+        updateActionState();
       }
     }
 
@@ -748,8 +1005,8 @@
 
     function wireDrop() {
       const drop = $("drop");
-      drop.addEventListener("click", () => $("file-input").click());
-      $("pick-btn").addEventListener("click", () => $("file-input").click());
+      drop.addEventListener("click", chooseSourceImage);
+      $("pick-btn").addEventListener("click", chooseSourceImage);
       $("file-input").addEventListener("change", (event) => setSource(event.target.files?.[0]));
       for (const type of ["dragenter", "dragover"]) {
         drop.addEventListener(type, (event) => {
@@ -775,12 +1032,23 @@
         $(id).addEventListener("change", updateSliderLabels);
       }
       $("clear-btn").addEventListener("click", clearSource);
-      $("warm-btn").addEventListener("click", warmup);
       $("generate-btn").addEventListener("click", generate);
       $("download-ply").addEventListener("click", () => download("ply"));
       $("download-splat").addEventListener("click", () => download("splat"));
+      $("strip-refresh").addEventListener("click", () => refreshOutputs());
+      $("strip-prev").addEventListener("click", () => selectOutputRun(state.selectedOutputIndex - 1));
+      $("strip-next").addEventListener("click", () => selectOutputRun(state.selectedOutputIndex + 1));
+      $("output-picker").addEventListener("change", (event) => selectOutputRun(Number(event.target.value)));
+      $("gallery").addEventListener("wheel", (event) => {
+        if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+          event.currentTarget.scrollLeft += event.deltaY;
+          event.preventDefault();
+        }
+      }, { passive: false });
       refreshServerInfo();
+      refreshOutputs();
       setProgress("Idle", "Idle", 0, "Waiting for source image.");
+      updateActionState();
     }
 
     init();

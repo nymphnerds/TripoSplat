@@ -220,12 +220,6 @@ def list_outputs() -> dict[str, Any]:
     return {"outputs": [_file_record(path) for path in files[:80]]}
 
 
-@APP.post("/api/warmup")
-async def warmup() -> dict[str, Any]:
-    await asyncio.to_thread(_get_pipeline)
-    return {"ok": True, "detail": "TripoSplat models loaded."}
-
-
 @APP.post("/api/generate")
 async def generate(request: Request) -> JSONResponse:
     payload = await request.json()

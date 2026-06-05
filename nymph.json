@@ -3,7 +3,7 @@
   "id": "triposplat",
   "name": "TripoSplat",
   "short_name": "TS",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "TripoSplat generates Gaussian splats from a single image and previews .ply / .splat outputs in the Manager.",
   "category": "3d",
   "kind": "3d",
@@ -39,7 +39,7 @@
     ],
     "requirements": [
       "Python 3 in the managed NymphsCore WSL distro",
-      "CUDA-capable NVIDIA GPU",
+      "CUDA 13 / PyTorch cu130 capable NVIDIA GPU",
       "TripoSplat model files fetched from Hugging Face"
     ]
   },
