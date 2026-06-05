@@ -156,6 +156,11 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+ckpts/
+gradio_outputs/
+outputs/
+logs/
+.nymph-module-version
 
 # Spyder project settings
 .spyderproject

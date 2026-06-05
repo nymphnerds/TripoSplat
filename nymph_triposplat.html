@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TripoSplat</title>
+  <script src="/assets/vendor/lucide-0.468.0.min.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07100f;
+      --surface: #0b1514;
+      --surface-2: #101b1d;
+      --line: #1b3536;
+      --line-2: #284446;
+      --text: #f0faf7;
+      --muted: #9bb9b4;
+      --teal: #29e6da;
+      --lime: #97df48;
+      --amber: #ff8a2a;
+      --danger: #ff5e6c;
+      --font-head: Bahnschrift, "Arial Narrow", "Segoe UI", sans-serif;
+      --font-mono: "Cascadia Mono", "DM Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --font-body: Inter, "Segoe UI", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: linear-gradient(125deg, #020807 0%, #03100e 44%, #061411 78%, #081816 100%);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      letter-spacing: 0;
+    }
+    button, input, select { font: inherit; letter-spacing: 0; }
+    * { scrollbar-width: thin; scrollbar-color: rgba(41, 230, 218, 0.78) transparent; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { border-radius: 999px; background: rgba(41, 230, 218, 0.72); }
+    .app {
+      height: 100vh;
+      min-height: 560px;
+      display: grid;
+      grid-template-columns: 360px minmax(400px, 1fr);
+      background: rgba(2, 8, 7, 0.72);
+    }
+    .sidebar {
+      min-width: 0;
+      height: 100vh;
+      overflow-y: auto;
+      padding: 18px 20px 16px;
+      border-right: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(8, 17, 18, 0.94), rgba(5, 12, 12, 0.98));
+    }
+    .section { padding: 15px 0; border-top: 1px solid rgba(33, 71, 74, 0.72); }
+    .section:first-child { padding-top: 0; border-top: 0; }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 10px;
+      color: var(--lime);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .section-title::before { content: "//"; color: var(--teal); }
+    .source-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 10px;
+    }
+    .source-copy { color: var(--muted); font-size: 12px; line-height: 1.35; }
+    .drop {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      width: 100%;
+      display: grid;
+      place-items: center;
+      padding: 10px;
+      border: 1px dashed rgba(41, 230, 218, 0.36);
+      border-radius: 8px;
+      background:
+        radial-gradient(circle at 50% 28%, rgba(41, 230, 218, 0.08), transparent 34%),
+        rgba(11, 21, 20, 0.66);
+      overflow: hidden;
+      cursor: pointer;
+    }
+    .drop.drag { border-color: var(--lime); background-color: rgba(15, 32, 34, 0.9); }
+    .drop img {
+      display: none;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      padding: 10px;
+      object-fit: contain;
+      object-position: center;
+      background:
+        linear-gradient(45deg, rgba(255,255,255,0.025) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(255,255,255,0.025) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(255,255,255,0.025) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(255,255,255,0.025) 75%);
+      background-size: 18px 18px;
+      background-position: 0 0, 0 9px, 9px -9px, -9px 0;
+    }
+    .drop-hint {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 8px;
+      justify-items: center;
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+    }
+    .drop-hint svg { width: 30px; height: 30px; color: var(--muted); }
+    .command-deck { display: grid; gap: 7px; margin-top: 10px; }
+    .command-row { display: grid; gap: 7px; align-items: stretch; }
+    .source-tools { grid-template-columns: 1.22fr 0.78fr; }
+    .export-tools { grid-template-columns: 1fr 1fr; }
+    .btn {
+      min-height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 5px 8px;
+      border: 1px solid var(--line-2);
+      border-radius: 5px;
+      color: var(--teal);
+      background: rgba(15, 26, 28, 0.85);
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      font-weight: 850;
+      line-height: 1.1;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .btn::before { content: "//"; color: var(--lime); }
+    .btn.primary {
+      color: #06110f;
+      border-color: var(--lime);
+      background: linear-gradient(90deg, var(--lime), rgba(41, 230, 218, 0.92));
+      font-weight: 950;
+    }
+    .btn.primary::before { color: #06110f; }
+    .btn.danger {
+      color: #ffb15f;
+      border-color: rgba(255, 139, 39, 0.52);
+      background: rgba(37, 20, 12, 0.82);
+    }
+    .command-row .btn {
+      width: 100%;
+      min-width: 0;
+      height: 30px;
+      min-height: 30px;
+      padding: 3px 8px;
+      font-size: 9.8px;
+      text-align: center;
+    }
+    label {
+      display: grid;
+      gap: 6px;
+      margin: 10px 0 0;
+      color: #dcefeb;
+      font-size: 11.5px;
+      font-weight: 750;
+    }
+    input, select {
+      min-width: 0;
+      width: 100%;
+      height: 32px;
+      border: 1px solid var(--line-2);
+      border-radius: 5px;
+      padding: 5px 8px;
+      color: var(--text);
+      background: rgba(5, 14, 14, 0.9);
+      outline: none;
+    }
+    input[type="range"] { padding: 0; accent-color: var(--teal); }
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .value-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .status-card {
+      display: grid;
+      gap: 7px;
+      padding: 10px;
+      border: 1px solid rgba(40, 68, 70, 0.82);
+      border-radius: 8px;
+      background: rgba(9, 18, 19, 0.76);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .status-line { display: flex; justify-content: space-between; gap: 12px; }
+    .status-line strong { color: var(--text); font-family: var(--font-mono); font-size: 10.5px; }
+    .stage { min-width: 0; height: 100vh; display: flex; flex-direction: column; }
+    .topbar {
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(5, 13, 13, 0.72);
+    }
+    .status {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 850;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .dot {
+      width: 9px;
+      height: 9px;
+      flex: 0 0 auto;
+      border-radius: 999px;
+      background: var(--muted);
+      box-shadow: 0 0 18px rgba(155, 185, 180, 0.35);
+    }
+    .dot.ready { background: var(--lime); box-shadow: 0 0 18px rgba(151, 223, 72, 0.45); }
+    .dot.work { background: var(--teal); box-shadow: 0 0 18px rgba(41, 230, 218, 0.5); }
+    .dot.err { background: var(--danger); box-shadow: 0 0 18px rgba(255, 94, 108, 0.45); }
+    .workspace { min-height: 0; flex: 1; display: grid; grid-template-rows: minmax(0, 1fr) auto; }
+    .viewer-shell {
+      position: relative;
+      min-height: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 50% 44%, rgba(41, 230, 218, 0.075), transparent 32%),
+        rgba(5, 12, 12, 0.92);
+    }
+    canvas { display: block; width: 100%; height: 100%; }
+    .empty {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      gap: 10px;
+      color: rgba(155, 185, 180, 0.8);
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 850;
+      pointer-events: none;
+    }
+    .empty svg { width: 36px; height: 36px; color: rgba(41, 230, 218, 0.65); }
+    .viewer-hud {
+      position: absolute;
+      left: 14px;
+      bottom: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      pointer-events: none;
+    }
+    .pill {
+      max-width: min(520px, 70vw);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      border: 1px solid rgba(40, 68, 70, 0.72);
+      border-radius: 5px;
+      padding: 5px 8px;
+      background: rgba(4, 11, 11, 0.78);
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .top-progress {
+      min-height: 54px;
+      display: grid;
+      grid-template-columns: auto auto minmax(120px, 1fr) minmax(120px, 28%);
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px 12px;
+      border-top: 1px solid var(--line);
+      background: rgba(5, 13, 13, 0.9);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 850;
+    }
+    .top-progress-icon { width: 20px; height: 20px; color: #bdebe4; }
+    .top-progress-stage { color: var(--text); font-weight: 900; white-space: nowrap; }
+    .top-progress-copy { min-width: 0; display: grid; gap: 3px; }
+    .top-progress-text,
+    .top-progress-extra { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .top-progress-extra { color: var(--muted); font-size: 10px; }
+    .bar {
+      position: relative;
+      height: 7px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: rgba(28, 58, 60, 0.78);
+      border: 1px solid rgba(49, 89, 91, 0.64);
+    }
+    .bar span {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--teal), var(--lime));
+      transition: width 180ms ease;
+    }
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%) translateY(20px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 9px 12px;
+      border: 1px solid var(--line-2);
+      border-radius: 8px;
+      background: rgba(4, 12, 12, 0.94);
+      color: var(--text);
+      font-size: 12px;
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.35);
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    @media (max-width: 760px) {
+      body { overflow: auto; }
+      .app { grid-template-columns: 1fr; height: auto; min-height: 100vh; }
+      .sidebar { height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+      .stage { height: 78vh; min-height: 560px; }
+      .top-progress { grid-template-columns: auto auto minmax(0, 1fr); }
+      .top-progress .bar { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="sidebar">
+      <section class="section">
+        <div class="source-head">
+          <h2 class="section-title">Source</h2>
+          <span class="source-copy" id="source-label">No image</span>
+        </div>
+        <div class="drop" id="drop">
+          <img id="source-preview" alt="">
+          <div class="drop-hint" id="drop-hint"><i data-lucide="image-plus"></i><span>Drop image</span></div>
+        </div>
+        <input id="file-input" type="file" accept="image/*" hidden>
+        <div class="command-deck">
+          <div class="command-row source-tools">
+            <button class="btn" id="pick-btn" type="button">Pick Image</button>
+            <button class="btn danger" id="clear-btn" type="button">Clear</button>
+          </div>
+          <div class="command-row">
+            <button class="btn primary" id="generate-btn" type="button">Generate Splat</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">Runtime</h2>
+        <div class="field-grid">
+          <label>Seed
+            <input id="seed" type="number" value="42" min="0" step="1">
+          </label>
+          <label>Output
+            <select id="output-format">
+              <option value="both">PLY + SPLAT</option>
+              <option value="ply">PLY</option>
+              <option value="splat">SPLAT</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          <span class="value-row"><span>Gaussians</span><span id="gaussian-value">262144</span></span>
+          <select id="num-gaussians">
+            <option value="32768">32768</option>
+            <option value="65536">65536</option>
+            <option value="131072">131072</option>
+            <option value="262144" selected>262144</option>
+          </select>
+        </label>
+        <div class="command-deck">
+          <div class="command-row">
+            <button class="btn" id="warm-btn" type="button">Warm Up</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">Advanced parameters</h2>
+        <label>
+          <span class="value-row"><span>Steps</span><span id="steps-value">20</span></span>
+          <input id="steps" type="range" min="1" max="50" step="1" value="20">
+        </label>
+        <label>
+          <span class="value-row"><span>Guidance</span><span id="guidance-value">3.0</span></span>
+          <input id="guidance" type="range" min="1" max="10" step="0.5" value="3">
+        </label>
+        <label>
+          <span class="value-row"><span>Shift</span><span id="shift-value">3.0</span></span>
+          <input id="shift" type="range" min="1" max="8" step="0.5" value="3">
+        </label>
+        <label>
+          <span class="value-row"><span>Matte erode</span><span id="erode-value">1</span></span>
+          <input id="erode" type="range" min="0" max="6" step="1" value="1">
+        </label>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">Status</h2>
+        <div class="status-card">
+          <div class="status-line"><span>Model files</span><strong id="model-state">checking</strong></div>
+          <div class="status-line"><span>Pipeline</span><strong id="pipeline-state">cold</strong></div>
+          <div class="status-line"><span>Last output</span><strong id="output-state">none</strong></div>
+        </div>
+        <div class="command-deck">
+          <div class="command-row export-tools">
+            <button class="btn" id="download-ply" type="button" disabled>PLY</button>
+            <button class="btn" id="download-splat" type="button" disabled>SPLAT</button>
+          </div>
+        </div>
+      </section>
+    </aside>
+
+    <section class="stage">
+      <header class="topbar">
+        <div class="status"><span class="dot" id="dot"></span><span id="status-text">Waiting for image</span></div>
+        <div class="status" id="runtime-text">TripoSplat</div>
+      </header>
+      <div class="workspace">
+        <div class="viewer-shell" id="viewer-shell">
+          <div class="empty" id="empty"><i data-lucide="sparkles"></i><div>Generated splat appears here.</div></div>
+          <div class="viewer-hud" id="viewer-hud"></div>
+        </div>
+        <div class="top-progress">
+          <i class="top-progress-icon" data-lucide="activity"></i>
+          <span class="top-progress-stage" id="progress-stage">Idle</span>
+          <div class="top-progress-copy"><span class="top-progress-text" id="progress-text">Idle</span><span class="top-progress-extra" id="progress-extra">Waiting for source image.</span></div>
+          <div class="bar"><span id="progress-bar"></span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <div class="toast" id="toast"></div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/assets/vendor/three.module.js",
+        "three/addons/": "/assets/vendor/three-addons/",
+        "@sparkjsdev/spark": "/assets/vendor/spark.module.js"
+      }
+    }
+  </script>
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { SparkRenderer, SplatMesh } from "@sparkjsdev/spark";
+
+    const $ = (id) => document.getElementById(id);
+    const state = {
+      file: null,
+      imageData: "",
+      busy: false,
+      progressTimer: null,
+      scene: null,
+      renderer: null,
+      controls: null,
+      splatRoot: null,
+      splat: null,
+      spark: null,
+      camera: null,
+      lastOutputs: {},
+    };
+
+    function toast(message) {
+      const el = $("toast");
+      el.textContent = message;
+      el.classList.add("show");
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => el.classList.remove("show"), 3000);
+    }
+
+    function setStatus(text, kind = "") {
+      $("status-text").textContent = text;
+      $("dot").className = `dot ${kind}`;
+    }
+
+    function setProgress(stage, detail, percent, extra = "") {
+      $("progress-stage").textContent = stage;
+      $("progress-text").textContent = detail;
+      $("progress-extra").textContent = extra;
+      $("progress-bar").style.width = `${Math.max(0, Math.min(100, Number(percent) || 0))}%`;
+    }
+
+    function updateSliderLabels() {
+      $("steps-value").textContent = $("steps").value;
+      $("guidance-value").textContent = Number($("guidance").value).toFixed(1);
+      $("shift-value").textContent = Number($("shift").value).toFixed(1);
+      $("erode-value").textContent = $("erode").value;
+      $("gaussian-value").textContent = $("num-gaussians").value;
+    }
+
+    function errorText(err) {
+      const raw = String(err?.message || err || "");
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed.detail?.message) return parsed.detail.message;
+        if (parsed.detail) return typeof parsed.detail === "string" ? parsed.detail : JSON.stringify(parsed.detail);
+      } catch {}
+      return raw || "Unexpected error.";
+    }
+
+    async function readFile(file) {
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(reader.error || new Error("Could not read file."));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function setSource(file) {
+      if (!file) return;
+      state.file = file;
+      state.imageData = await readFile(file);
+      $("source-label").textContent = file.name;
+      $("source-preview").src = state.imageData;
+      $("source-preview").style.display = "block";
+      $("drop-hint").style.display = "none";
+      setStatus("Image ready", "ready");
+      setProgress("Ready", "Source image selected.", 0, file.name);
+    }
+
+    function clearSource() {
+      state.file = null;
+      state.imageData = "";
+      $("source-label").textContent = "No image";
+      $("source-preview").removeAttribute("src");
+      $("source-preview").style.display = "none";
+      $("drop-hint").style.display = "grid";
+      setStatus("Waiting for image");
+      setProgress("Idle", "Idle", 0, "Waiting for source image.");
+    }
+
+    function initViewer() {
+      if (state.renderer) return;
+      const shell = $("viewer-shell");
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(45, shell.clientWidth / shell.clientHeight, 0.01, 1000);
+      camera.position.set(0, 0.25, 1.8);
+      const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(shell.clientWidth, shell.clientHeight);
+      shell.appendChild(renderer.domElement);
+      const spark = new SparkRenderer({ renderer });
+      scene.add(spark);
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.07;
+      controls.minDistance = 0.2;
+      controls.maxDistance = 50;
+      controls.target.set(0, 0, 0);
+
+      state.scene = scene;
+      state.camera = camera;
+      state.renderer = renderer;
+      state.controls = controls;
+      state.spark = spark;
+      renderer.setAnimationLoop(() => {
+        controls.update();
+        renderer.render(scene, camera);
+      });
+      window.addEventListener("resize", resizeViewer);
+    }
+
+    function resizeViewer() {
+      if (!state.renderer || !state.camera) return;
+      const shell = $("viewer-shell");
+      state.camera.aspect = shell.clientWidth / Math.max(shell.clientHeight, 1);
+      state.camera.updateProjectionMatrix();
+      state.renderer.setSize(shell.clientWidth, shell.clientHeight);
+    }
+
+    function clearSplat() {
+      if (state.splatRoot && state.scene) {
+        state.scene.remove(state.splatRoot);
+      }
+      state.splatRoot = null;
+      state.splat = null;
+    }
+
+    function loadSplat(url, label) {
+      initViewer();
+      clearSplat();
+      const splat = new SplatMesh({ url });
+      const root = new THREE.Group();
+      root.add(splat);
+      splat.rotation.y = Math.PI / 2;
+      root.rotation.x = Math.PI;
+      state.scene.add(root);
+      state.splatRoot = root;
+      state.splat = splat;
+      $("empty").style.display = "none";
+      $("viewer-hud").innerHTML = `<span class="pill">${label}</span>`;
+      setTimeout(() => {
+        if (!state.splatRoot || !state.camera || !state.controls) return;
+        const box = new THREE.Box3().setFromObject(state.splatRoot);
+        if (box.isEmpty() || !Number.isFinite(box.min.x)) return;
+        const center = new THREE.Vector3();
+        const size = new THREE.Vector3();
+        box.getCenter(center);
+        box.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z, 0.1);
+        state.camera.position.copy(center).add(new THREE.Vector3(0, maxDim * 0.12, maxDim * 1.8));
+        state.controls.target.copy(center);
+        state.controls.update();
+      }, 900);
+    }
+
+    async function refreshServerInfo() {
+      try {
+        const response = await fetch("/server_info", { cache: "no-store" });
+        const info = await response.json();
+        $("model-state").textContent = info.models_ready ? "ready" : "missing";
+        $("pipeline-state").textContent = info.pipeline_loaded ? "warm" : "cold";
+        $("runtime-text").textContent = info.models_ready ? "models ready" : "fetch models";
+      } catch {
+        $("model-state").textContent = "unknown";
+      }
+    }
+
+    async function pollProgress() {
+      try {
+        const response = await fetch("/progress", { cache: "no-store" });
+        const task = await response.json();
+        const percent = Number(task.progress_percent || 0);
+        if (task.status === "processing") {
+          setProgress(task.stage || "Working", task.detail || "Working", percent);
+        }
+      } catch {}
+    }
+
+    function startProgressPolling() {
+      clearInterval(state.progressTimer);
+      state.progressTimer = setInterval(pollProgress, 800);
+    }
+
+    function stopProgressPolling() {
+      clearInterval(state.progressTimer);
+      state.progressTimer = null;
+    }
+
+    async function warmup() {
+      if (state.busy) return;
+      state.busy = true;
+      setStatus("Warming up", "work");
+      setProgress("Warm", "Loading TripoSplat models.", 12);
+      startProgressPolling();
+      try {
+        const response = await fetch("/api/warmup", { method: "POST" });
+        if (!response.ok) throw new Error(await response.text());
+        $("pipeline-state").textContent = "warm";
+        setStatus("Ready", "ready");
+        setProgress("Ready", "TripoSplat models loaded.", 0);
+      } catch (err) {
+        setStatus("Warm failed", "err");
+        setProgress("Failed", errorText(err), 0);
+        toast(errorText(err));
+      } finally {
+        state.busy = false;
+        stopProgressPolling();
+        refreshServerInfo();
+      }
+    }
+
+    async function generate() {
+      if (state.busy) return;
+      if (!state.imageData) {
+        toast("Pick an image first.");
+        return;
+      }
+      state.busy = true;
+      setStatus("Generating", "work");
+      setProgress("Generate", "Sending TripoSplat request.", 8);
+      startProgressPolling();
+      try {
+        const payload = {
+          image: state.imageData,
+          seed: Number($("seed").value || 42),
+          steps: Number($("steps").value || 20),
+          guidance_scale: Number($("guidance").value || 3),
+          shift: Number($("shift").value || 3),
+          erode_radius: Number($("erode").value || 1),
+          num_gaussians: Number($("num-gaussians").value || 262144),
+          output_format: $("output-format").value,
+        };
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) throw new Error(await response.text());
+        const result = await response.json();
+        state.lastOutputs = result.outputs || {};
+        $("output-state").textContent = result.run_id || "saved";
+        $("download-ply").disabled = !state.lastOutputs.ply;
+        $("download-splat").disabled = !state.lastOutputs.splat;
+        loadSplat(result.preview.url, `${result.num_gaussians.toLocaleString()} gaussians`);
+        setStatus("Complete", "ready");
+        setProgress("Complete", "Saved TripoSplat splat outputs.", 100, result.run_id || "");
+      } catch (err) {
+        setStatus("Generate failed", "err");
+        setProgress("Failed", errorText(err), 0);
+        toast(errorText(err));
+      } finally {
+        state.busy = false;
+        stopProgressPolling();
+        refreshServerInfo();
+      }
+    }
+
+    function download(kind) {
+      const item = state.lastOutputs[kind];
+      if (!item) return;
+      window.location.href = item.url;
+    }
+
+    function wireDrop() {
+      const drop = $("drop");
+      drop.addEventListener("click", () => $("file-input").click());
+      $("pick-btn").addEventListener("click", () => $("file-input").click());
+      $("file-input").addEventListener("change", (event) => setSource(event.target.files?.[0]));
+      for (const type of ["dragenter", "dragover"]) {
+        drop.addEventListener(type, (event) => {
+          event.preventDefault();
+          drop.classList.add("drag");
+        });
+      }
+      for (const type of ["dragleave", "drop"]) {
+        drop.addEventListener(type, (event) => {
+          event.preventDefault();
+          drop.classList.remove("drag");
+        });
+      }
+      drop.addEventListener("drop", (event) => setSource(event.dataTransfer?.files?.[0]));
+    }
+
+    function init() {
+      lucide.createIcons();
+      wireDrop();
+      updateSliderLabels();
+      for (const id of ["steps", "guidance", "shift", "erode", "num-gaussians"]) {
+        $(id).addEventListener("input", updateSliderLabels);
+        $(id).addEventListener("change", updateSliderLabels);
+      }
+      $("clear-btn").addEventListener("click", clearSource);
+      $("warm-btn").addEventListener("click", warmup);
+      $("generate-btn").addEventListener("click", generate);
+      $("download-ply").addEventListener("click", () => download("ply"));
+      $("download-splat").addEventListener("click", () => download("splat"));
+      refreshServerInfo();
+      setProgress("Idle", "Idle", 0, "Waiting for source image.");
+    }
+
+    init();
+  </script>
+</body>
+</html>
